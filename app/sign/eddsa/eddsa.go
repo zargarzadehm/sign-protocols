@@ -78,7 +78,7 @@ func (s *operationEDDSASign) CreateParty(rosenTss _interface.RosenTss, errorCh c
 		return
 	}
 
-	s.Logger.Infof("party info: %v ", s.LocalTssData.Party)
+	s.Logger.Debugf("party info: %v ", s.LocalTssData.Party)
 	go func() {
 		result, err := s.GossipMessageHandler(rosenTss, outCh, endCh)
 		if err != nil {
@@ -138,7 +138,7 @@ func (s *operationEDDSASign) StartAction(rosenTss _interface.RosenTss, messageCh
 							break
 						}
 					}
-					s.Logger.Infof("party info: %+v", s.LocalTssData.Party)
+					s.Logger.Debugf("party info: %+v", s.LocalTssData.Party)
 					err = s.PartyUpdate(partyMsg)
 					if err != nil {
 						s.Logger.Errorf("there was an error in handling party message: %+v", err)
