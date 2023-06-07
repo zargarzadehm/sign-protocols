@@ -134,7 +134,7 @@ func (r *rosenTss) MessageHandler(message models.Message) error {
 		return err
 	}
 
-	logging.Infof("callback route called. new %+v message from: %+v", gossipMsg.Name, gossipMsg.SenderId)
+	logging.Infof("callback route called. new message %+v from: %+v", gossipMsg.MessageId, gossipMsg.SenderId)
 
 	// handling recover in case the channel is closed but not removed from the list yet, and there is a message to send on that
 	send := func(c chan models.GossipMessage, t models.GossipMessage) {

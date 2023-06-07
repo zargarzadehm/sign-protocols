@@ -3,20 +3,19 @@ package eddsa
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
-	"rosen-bridge/tss-api/utils"
-	"time"
-
 	"github.com/bnb-chain/tss-lib/common"
 	eddsaKeygen "github.com/bnb-chain/tss-lib/eddsa/keygen"
 	eddsaSigning "github.com/bnb-chain/tss-lib/eddsa/signing"
 	"github.com/bnb-chain/tss-lib/tss"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/blake2b"
+	"math/big"
 	"rosen-bridge/tss-api/app/interface"
 	"rosen-bridge/tss-api/app/sign"
 	"rosen-bridge/tss-api/logger"
 	"rosen-bridge/tss-api/models"
+	"rosen-bridge/tss-api/utils"
+	"time"
 )
 
 type operationEDDSASign struct {
@@ -117,36 +116,32 @@ func (s *operationEDDSASign) StartAction(rosenTss _interface.RosenTss, messageCh
 				}
 				return fmt.Errorf("communication channel is closed")
 			}
-			s.Logger.Infof("new {%s} message from {%s} on communication channel", msg.Name, msg.SenderId)
-
-			switch msg.Name {
-			case sign.PartyMessage:
-				msgBytes, err := utils.Decoder(msg.Message)
-				if err != nil {
-					return err
-				}
-				partyMsg := models.PartyMessage{}
-				err = json.Unmarshal(msgBytes, &partyMsg)
-				if err != nil {
-					return err
-				}
-				go func() {
-					for {
-						if s.LocalTssData.Party == nil {
-							time.Sleep(time.Duration(rosenTss.GetConfig().WaitInPartyMessageHandling) * time.Millisecond)
-						} else {
-							break
-						}
-					}
-					s.Logger.Debugf("party info: %+v", s.LocalTssData.Party)
-					err = s.PartyUpdate(partyMsg)
-					if err != nil {
-						s.Logger.Errorf("there was an error in handling party message: %+v", err)
-						errorCh <- err
-					}
-					s.Logger.Infof("party is waiting for: %+v", s.LocalTssData.Party.WaitingFor())
-				}()
+			s.Logger.Infof("received new message from {%s} on communication channel", msg.SenderId)
+			msgBytes, err := utils.Decoder(msg.Message)
+			if err != nil {
+				return err
 			}
+			partyMsg := models.PartyMessage{}
+			err = json.Unmarshal(msgBytes, &partyMsg)
+			if err != nil {
+				return err
+			}
+			go func() {
+				for {
+					if s.LocalTssData.Party == nil {
+						time.Sleep(time.Duration(rosenTss.GetConfig().WaitInPartyMessageHandling) * time.Millisecond)
+					} else {
+						break
+					}
+				}
+				s.Logger.Debugf("party info: %+v", s.LocalTssData.Party)
+				err = s.PartyUpdate(partyMsg)
+				if err != nil {
+					s.Logger.Errorf("there was an error in handling party message: %+v", err)
+					errorCh <- err
+				}
+				s.Logger.Infof("party is waiting for: %+v", s.LocalTssData.Party.WaitingFor())
+			}()
 		default:
 			if s.LocalTssData.Party == nil && !partyStarted {
 				partyStarted = true
@@ -192,7 +187,6 @@ func (s *operationEDDSASign) NewMessage(rosenTss _interface.RosenTss, payload mo
 		MessageId:  payload.MessageId,
 		SenderId:   payload.SenderId,
 		ReceiverId: receiver,
-		Name:       payload.Name,
 		Index:      index,
 	}
 	err := rosenTss.GetConnection().Publish(gossipMessage)
@@ -219,7 +213,6 @@ func (s *operationEDDSASign) HandleOutMessage(rosenTss _interface.RosenTss, part
 		Message:   msgHex,
 		MessageId: messageId,
 		SenderId:  s.LocalTssData.PartyID.Id,
-		Name:      sign.PartyMessage,
 	}
 
 	if partyMsg.IsBroadcast() || partyMsg.GetTo() == nil {
@@ -313,7 +306,7 @@ func (h *handler) StartParty(
 	return nil
 }
 
-//	- loads saved data from file for signing
+//	- loads keygen data from file for signing
 //	- creates tss party ID with p2pID
 func (h *handler) LoadData(rosenTss _interface.RosenTss) (*tss.PartyID, error) {
 	data, pID, err := rosenTss.GetStorage().LoadEDDSAKeygen(rosenTss.GetPeerHome())

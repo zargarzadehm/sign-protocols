@@ -39,7 +39,6 @@ type Message struct {
 
 type GossipMessage struct {
 	MessageId  string `json:"messageId"`
-	Name       string `json:"name"`
 	Message    string `json:"message"`
 	SenderId   string `json:"senderId"`
 	ReceiverId string `json:"receiverId"`
@@ -89,7 +88,6 @@ type Config struct {
 
 type Payload struct {
 	MessageId string `json:"messageId"`
-	Name      string `json:"name"`
 	Message   string `json:"message"`
 	SenderId  string `json:"senderId"`
 }

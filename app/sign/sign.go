@@ -10,10 +10,6 @@ import (
 	"rosen-bridge/tss-api/models"
 )
 
-const (
-	PartyMessage = "party"
-)
-
 type Handler interface {
 	LoadData(_interface.RosenTss) (*tss.PartyID, error)
 	GetData() ([]*big.Int, *big.Int)
