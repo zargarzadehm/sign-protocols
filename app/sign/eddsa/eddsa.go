@@ -30,14 +30,7 @@ type handler struct {
 var logging *zap.SugaredLogger
 var eddsaHandler handler
 
-/*	Init
-	- Initializes the eddsa sign partyId and peers
-	args:
-	- app_interface_to_load_data _interface.RosenTss
-	- receiver_id string
-	returns:
-	error
-*/
+//	- Initializes the eddsa sign partyId and peers
 func (s *operationEDDSASign) Init(rosenTss _interface.RosenTss, peers []models.Peer) error {
 
 	s.Logger.Info("initiation signing process")
@@ -65,16 +58,9 @@ func (s *operationEDDSASign) Init(rosenTss _interface.RosenTss, peers []models.P
 	return nil
 }
 
-/*	CreateParty
-	- creates end and out channel for party,
-	- calls StartParty function of protocol
-	- handles end channel and out channel in a goroutine
-	args:
-	- rosenTss _interface.RosenTss
-	- errorCh chan error
-	returns:
-	-
-*/
+//	- creates end and out channel for party,
+//	- calls StartParty function of protocol
+//	- handles end channel and out channel in a go routine
 func (s *operationEDDSASign) CreateParty(rosenTss _interface.RosenTss, errorCh chan error) {
 	s.Logger.Info("creating and starting party")
 	msgBytes, _ := utils.Decoder(s.SignMessage.Message)
@@ -111,15 +97,7 @@ func (s *operationEDDSASign) CreateParty(rosenTss _interface.RosenTss, errorCh c
 	}()
 }
 
-/*	StartAction
-	- reads new gossip messages from channel and handle it by calling related function in a goroutine.
-	args:
-	- rosenTss _interface.RosenTss
-	- messageCh chan models.GossipMessage
-	- errorCh chan error
-	returns:
-	error
-*/
+//	- reads new gossip messages from channel and handle it by calling related function in a go routine.
 func (s *operationEDDSASign) StartAction(rosenTss _interface.RosenTss, messageCh chan models.GossipMessage, errorCh chan error) error {
 
 	partyStarted := false
@@ -179,6 +157,7 @@ func (s *operationEDDSASign) StartAction(rosenTss _interface.RosenTss, messageCh
 	}
 }
 
+//	- create eddsa sign operation
 func NewSignEDDSAOperation(signMessage models.SignMessage) _interface.Operation {
 	logging = logger.NewSugar("eddsa-sign")
 	return &operationEDDSASign{
@@ -191,22 +170,14 @@ func NewSignEDDSAOperation(signMessage models.SignMessage) _interface.Operation 
 	}
 }
 
-// GetClassName returns the class name
+//	- returns the class name
 func (s *operationEDDSASign) GetClassName() string {
 	return "eddsaSign"
 }
 
-/*	NewMessage
-	- finds the index of peer in the key list.
-	- creates a gossip message from payload.
-	- sends the gossip message to Publish function.
-	args:
-	- rosenTss _interface.RosenTss
-	- payload models.Payload
-	- receiver_id string
-	returns:
-	error
-*/
+//	- finds the index of peer in the key list.
+//	- creates a gossip message from payload.
+//	- sends the gossip message to Publish function.
 func (s *operationEDDSASign) NewMessage(rosenTss _interface.RosenTss, payload models.Payload, receiver string) error {
 	s.Logger.Infof("creating new gossip message")
 	keyList, sharedId := s.GetData()
@@ -231,16 +202,9 @@ func (s *operationEDDSASign) NewMessage(rosenTss _interface.RosenTss, payload mo
 	return nil
 }
 
-/*	HandleOutMessage
-	- handles party messages on out channel
-	- creates payload from party message
-	- send it to NewMessage function
-	args:
-	- rosenTss _interface.RosenTss
-	- partyMsg tss.Message
-	returns:
-	error
-*/
+//	- handles party messages on out channel
+//	- creates payload from party message
+//	- send it to NewMessage function
 func (s *operationEDDSASign) HandleOutMessage(rosenTss _interface.RosenTss, partyMsg tss.Message) error {
 	msgBytes, _ := utils.Decoder(s.SignMessage.Message)
 	signData := new(big.Int).SetBytes(msgBytes)
@@ -274,15 +238,8 @@ func (s *operationEDDSASign) HandleOutMessage(rosenTss _interface.RosenTss, part
 	return nil
 }
 
-/*	HandleEndMessage
-	- handles save data (signature) on end channel of party
-	- logs the data and send it to CallBack
-	args:
-	- rosenTss _interface.RosenTss
-	- signatureData *common.SignatureData
-	returns:
-	error
-*/
+//	- handles save data (signature) on end channel of party
+//	- logs the data and send it to CallBack
 func (s *operationEDDSASign) HandleEndMessage(rosenTss _interface.RosenTss, signatureData *common.SignatureData) error {
 
 	signData := models.SignData{
@@ -305,16 +262,8 @@ func (s *operationEDDSASign) HandleEndMessage(rosenTss _interface.RosenTss, sign
 
 }
 
-/*	GossipMessageHandler
-	- handles all party messages on outCh and endCh
-	- listens to channels and send the message to the right function
-	args:
-	- rosenTss _interface.RosenTss
-	- outCh chan tss.Message
-	- endCh chan common.SignatureData
-	returns:
-	result_of_process bool, error
-*/
+//	- handles all party messages on outCh and endCh
+//	- listens to channels and send the message to the right function
 func (s *operationEDDSASign) GossipMessageHandler(
 	rosenTss _interface.RosenTss, outCh chan tss.Message, endCh chan common.SignatureData,
 ) (bool, error) {
@@ -335,17 +284,7 @@ func (s *operationEDDSASign) GossipMessageHandler(
 	}
 }
 
-/*	StartParty
-	- creates tss parameters and party
-	args:
-	- local_tss_data *models.TssData,
-	- threshold int,
-	- data_should_be_signed *big.Int,
-	- outCh chan tss.Message,
-	- endCh chan common.SignatureData,
-	returns:
-	error
-*/
+//	- creates tss parameters and party
 func (h *handler) StartParty(
 	localTssData *models.TssData,
 	threshold int,
@@ -374,14 +313,8 @@ func (h *handler) StartParty(
 	return nil
 }
 
-/*	LoadData
-	- loads saved data from file for signing
-	- creates tss party ID with p2pID
-	args:
-	rosenTss _interface.RosenTss
-	returns:
-	party_Id *tss.PartyID, error
-*/
+//	- loads saved data from file for signing
+//	- creates tss party ID with p2pID
 func (h *handler) LoadData(rosenTss _interface.RosenTss) (*tss.PartyID, error) {
 	data, pID, err := rosenTss.GetStorage().LoadEDDSAKeygen(rosenTss.GetPeerHome())
 	if err != nil {
@@ -402,13 +335,7 @@ func (h *handler) LoadData(rosenTss _interface.RosenTss) (*tss.PartyID, error) {
 	return pID, nil
 }
 
-/*	GetData
-	- returns key_list and shared_ID of peer stored in the struct
-	args:
-	-
-	returns:
-	key_list []*big.Int, shared_id *big.Int
-*/
+//	- returns key_list and shared_ID of peer stored in the struct
 func (h *handler) GetData() ([]*big.Int, *big.Int) {
 	return h.savedData.Ks, h.savedData.ShareID
 }

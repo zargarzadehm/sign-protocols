@@ -45,7 +45,7 @@ func InitConnection(publishPath string, subscriptionPath string, p2pPort string,
 
 }
 
-// Publish publishes a message to p2p
+//	publishes a message to p2p
 func (c *connect) Publish(msg models.GossipMessage) error {
 	logging.Infof("publishing new message on p2p")
 	marshalledMessage, _ := json.Marshal(&msg)
@@ -104,7 +104,7 @@ func (c *connect) Publish(msg models.GossipMessage) error {
 	return nil
 }
 
-// Subscribe to p2p at first
+//	Subscribe to p2p at first
 func (c *connect) Subscribe(port string) error {
 	logging.Infof("Subscribing to: %s", c.subscriptionUrl)
 	values := map[string]string{
@@ -151,7 +151,7 @@ func (c *connect) Subscribe(port string) error {
 	return nil
 }
 
-// CallBack sends sign data to this url
+//	sends sign data to this url
 func (c *connect) CallBack(url string, data interface{}, status string) error {
 	logging.Info("sending callback data")
 
@@ -188,7 +188,7 @@ func (c *connect) CallBack(url string, data interface{}, status string) error {
 	return nil
 }
 
-// GetPeerId to get p2pId
+//	to get p2pId
 func (c *connect) GetPeerId() (string, error) {
 	logging.Infof("Getting PeerId")
 

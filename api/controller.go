@@ -10,7 +10,7 @@ import (
 	"rosen-bridge/tss-api/models"
 )
 
-// TssController Interface of an app controller
+//	Interface of an app controller
 type TssController interface {
 	Sign() echo.HandlerFunc
 	Message() echo.HandlerFunc
@@ -26,7 +26,7 @@ type response struct {
 
 var logging *zap.SugaredLogger
 
-// NewTssController Constructor of an app controller
+//	Constructor of an app controller
 func NewTssController(rosenTss _interface.RosenTss) TssController {
 	logging = logger.NewSugar("controller")
 	return &tssController{
@@ -34,7 +34,7 @@ func NewTssController(rosenTss _interface.RosenTss) TssController {
 	}
 }
 
-// checkOperation check if there is any common between forbidden list of requested operation and running operations
+//	check if there is any common between forbidden list of requested operation and running operations
 func (tssController *tssController) checkOperation(forbiddenOperations []string) error {
 	operations := tssController.rosenTss.GetOperations()
 	for _, operation := range operations {
@@ -47,7 +47,7 @@ func (tssController *tssController) checkOperation(forbiddenOperations []string)
 	return nil
 }
 
-// Sign returns echo handler, starting new sign process.
+//	returns echo handler, starting new sign process.
 func (tssController *tssController) Sign() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		data := models.SignMessage{}
@@ -83,7 +83,7 @@ func (tssController *tssController) Sign() echo.HandlerFunc {
 	}
 }
 
-//Message returns echo handler, receiving message from p2p and passing to related channel
+//	returns echo handler, receiving message from p2p and passing to related channel
 func (tssController *tssController) Message() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var data models.Message

@@ -35,7 +35,7 @@ func GetAbsoluteAddress(address string) (string, error) {
 	return absAddress, nil
 }
 
-// InitConfig reads in config file and ENV variables if set.
+//	reads in config file and ENV variables if set.
 func InitConfig(configFile string) (models.Config, error) {
 	// Search config in home directory with name "default" (without extension).
 	viper.SetConfigFile(configFile)
@@ -54,7 +54,7 @@ func InitConfig(configFile string) (models.Config, error) {
 	return conf, nil
 }
 
-// IndexOf finds index of element in a slice of bigInt
+//	finds index of element in a slice of bigInt
 func IndexOf(collection []*big.Int, el *big.Int) int {
 	for i, x := range collection {
 		if x.Cmp(el) == 0 {

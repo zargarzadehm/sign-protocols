@@ -37,13 +37,7 @@ type StructSign struct {
 	Handler
 }
 
-/*	PartyUpdate
-	- Updates party on received message destination.
-	args:
-	- partyMsg models.PartyMessage
-	returns:
-	error
-*/
+//	- Updates party on received message destination.
 func (s *StructSign) PartyUpdate(partyMsg models.PartyMessage) error {
 	dest := partyMsg.GetTo
 	if dest == nil { // broadcast!

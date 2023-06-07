@@ -11,7 +11,7 @@ type SignOperationHandler struct {
 	Operation
 }
 
-// PartyMessageHandler handles gossip message from party to party(s)
+//	handles gossip message from party to party(s)
 func (o *SignOperationHandler) PartyMessageHandler(partyMsg tss.Message) (string, error) {
 	msgBytes, _, err := partyMsg.WireBytes()
 	if err != nil {
@@ -33,7 +33,7 @@ func (o *SignOperationHandler) PartyMessageHandler(partyMsg tss.Message) (string
 	return hex.EncodeToString(partyMessageBytes), nil
 }
 
-// SharedPartyUpdater used to update app party
+//	used to update app party
 func (o *SignOperationHandler) SharedPartyUpdater(party tss.Party, msg models.PartyMessage) error {
 	// do not send a message from this party back to itself
 	if party.PartyID() == msg.GetFrom {

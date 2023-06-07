@@ -26,7 +26,7 @@ type storage struct {
 
 var logging *zap.SugaredLogger
 
-// NewStorage Constructor of a storage struct
+//	Constructor of a storage struct
 func NewStorage() Storage {
 	logging = logger.NewSugar("storage")
 	return &storage{
@@ -34,12 +34,12 @@ func NewStorage() Storage {
 	}
 }
 
-// MakefilePath Constructor of a storage struct
+//	Constructor of a storage struct
 func (f *storage) MakefilePath(peerHome string, protocol string) {
 	f.filePath = fmt.Sprintf("%s/%s", peerHome, protocol)
 }
 
-// LoadEDDSAKeygen Loads the EDDSA keygen data from the file
+//	Loads the EDDSA keygen data from the file
 func (f *storage) LoadEDDSAKeygen(peerHome string) (models.TssConfigEDDSA, *tss.PartyID, error) {
 	// locating file
 	var keygenFile string
