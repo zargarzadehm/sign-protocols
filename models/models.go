@@ -79,6 +79,7 @@ type Config struct {
 	LogMaxAge                  int     `mapstructure:"LOG_MAX_AGE"`
 	OperationTimeout           int     `mapstructure:"OPERATION_TIMEOUT"`
 	MessageTimeout             int     `mapstructure:"MESSAGE_TIMEOUT"`
+	WriteMsgRetryTime          int     `mapstructure:"WRITE_MSG_RETRY_TIME"`
 	LeastProcessRemainingTime  int64   `mapstructure:"LEAST_PROCESS_REMAINING_TIME"`
 	SetupBroadcastInterval     int64   `mapstructure:"SETUP_BROADCAST_INTERVAL"`
 	SignStartTimeTracker       float64 `mapstructure:"SIGN_START_TIME_TRACKER"`

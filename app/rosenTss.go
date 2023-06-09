@@ -134,7 +134,7 @@ func (r *rosenTss) MessageHandler(message models.Message) error {
 		return err
 	}
 
-	logging.Infof("callback route called. new message %+v from: %+v", gossipMsg.MessageId, gossipMsg.SenderId)
+	logging.Debugf("callback route called. new message %+v from: %+v", gossipMsg.MessageId, gossipMsg.SenderId)
 
 	// handling recover in case the channel is closed but not removed from the list yet, and there is a message to send on that
 	send := func(c chan models.GossipMessage, t models.GossipMessage) {
@@ -157,8 +157,7 @@ func (r *rosenTss) MessageHandler(message models.Message) error {
 			state = true
 			break
 		}
-		// TODO: add config for this time
-		time.Sleep(time.Millisecond * 500)
+		time.Sleep(time.Millisecond * time.Duration(r.Config.WriteMsgRetryTime))
 	}
 	if !state {
 		logging.Warnf("message timeout, channel not found: %+v", gossipMsg.MessageId)

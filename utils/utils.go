@@ -11,6 +11,7 @@ import (
 	"rosen-bridge/tss-api/models"
 )
 
+//	get absolute address of an address
 func GetAbsoluteAddress(address string) (string, error) {
 	var absAddress string
 	switch address[0:1] {

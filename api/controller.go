@@ -34,7 +34,7 @@ func NewTssController(rosenTss _interface.RosenTss) TssController {
 	}
 }
 
-//	check if there is any common between forbidden list of requested operation and running operations
+//	check if there is any common operation between forbidden and running ones.
 func (tssController *tssController) checkOperation(forbiddenOperations []string) error {
 	operations := tssController.rosenTss.GetOperations()
 	for _, operation := range operations {
@@ -53,9 +53,9 @@ func (tssController *tssController) Sign() echo.HandlerFunc {
 		data := models.SignMessage{}
 
 		if err := c.Bind(&data); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		logging.Infof("sign data: %+v ", data)
+		logging.Debugf("sign data: %+v ", data)
 
 		forbiddenOperations := []string{data.Crypto + "Keygen", data.Crypto + "Regroup"}
 		err := tssController.checkOperation(forbiddenOperations)
@@ -63,7 +63,6 @@ func (tssController *tssController) Sign() echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusConflict, err.Error())
 		}
 		err = tssController.rosenTss.StartNewSign(data)
-		// TODO: should delete instance of operation and call back
 		if err != nil {
 			switch err.Error() {
 			case models.DuplicatedMessageIdError:
@@ -89,8 +88,7 @@ func (tssController *tssController) Message() echo.HandlerFunc {
 		var data models.Message
 		logging.Infof("message route called")
 		if err := c.Bind(&data); err != nil {
-			logging.Errorf("can not bind data, err: %+v", err)
-			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
 		err := tssController.rosenTss.MessageHandler(data)

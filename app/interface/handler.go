@@ -33,7 +33,7 @@ func (o *SignOperationHandler) PartyMessageHandler(partyMsg tss.Message) (string
 	return hex.EncodeToString(partyMessageBytes), nil
 }
 
-//	used to update app party
+//	this is used to update party
 func (o *SignOperationHandler) SharedPartyUpdater(party tss.Party, msg models.PartyMessage) error {
 	// do not send a message from this party back to itself
 	if party.PartyID() == msg.GetFrom {
