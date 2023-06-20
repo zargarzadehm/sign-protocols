@@ -14,7 +14,7 @@ import (
 type Connection interface {
 	Publish(message models.GossipMessage) error
 	Subscribe(port string) error
-	CallBack(string, interface{}, string) error
+	CallBack(string, interface{}) error
 	GetPeerId() (string, error)
 }
 
@@ -31,10 +31,10 @@ type connect struct {
 
 var logging *zap.SugaredLogger
 
-func InitConnection(publishPath string, subscriptionPath string, p2pPort string, getPeerIDPath string) Connection {
-	publishUrl := fmt.Sprintf("http://localhost:%s%s", p2pPort, publishPath)
-	subscriptionUrl := fmt.Sprintf("http://localhost:%s%s", p2pPort, subscriptionPath)
-	getPeerIDUrl := fmt.Sprintf("http://localhost:%s%s", p2pPort, getPeerIDPath)
+func InitConnection(publishPath string, subscriptionPath string, p2pUrl string, getPeerIDPath string) Connection {
+	publishUrl := fmt.Sprintf("%s%s", p2pUrl, publishPath)
+	subscriptionUrl := fmt.Sprintf("%s%s", p2pUrl, subscriptionPath)
+	getPeerIDUrl := fmt.Sprintf("%s%s", p2pUrl, getPeerIDPath)
 	logging = logger.NewSugar("connection")
 	return &connect{
 		publishUrl:      publishUrl,
@@ -105,11 +105,11 @@ func (c *connect) Publish(msg models.GossipMessage) error {
 }
 
 //	Subscribe to p2p at first
-func (c *connect) Subscribe(port string) error {
+func (c *connect) Subscribe(projectUrl string) error {
 	logging.Infof("Subscribing to: %s", c.subscriptionUrl)
 	values := map[string]string{
 		"channel": "tss",
-		"url":     fmt.Sprintf("http://localhost:%s/message", port),
+		"url":     fmt.Sprintf("%s/message", projectUrl),
 	}
 	jsonData, err := json.Marshal(values)
 	if err != nil {
@@ -152,18 +152,10 @@ func (c *connect) Subscribe(port string) error {
 }
 
 //	sends sign data to this url
-func (c *connect) CallBack(url string, data interface{}, status string) error {
+func (c *connect) CallBack(url string, data interface{}) error {
 	logging.Info("sending callback data")
 
-	response := struct {
-		Message interface{} `json:"message"`
-		Status  string      `json:"status"`
-	}{
-		Message: data,
-		Status:  status,
-	}
-
-	jsonData, err := json.Marshal(response)
+	jsonData, err := json.Marshal(data)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -185,6 +177,7 @@ func (c *connect) CallBack(url string, data interface{}, status string) error {
 		logging.Error(err)
 		return err
 	}
+	logging.Info("send callback data successfully")
 	return nil
 }
 

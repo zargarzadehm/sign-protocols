@@ -25,10 +25,10 @@ type Peer struct {
 }
 
 type SignData struct {
+	Message   string `json:"message"`
 	Signature string `json:"signature"`
-	R         string `json:"r"`
-	S         string `json:"s"`
-	M         string `json:"m"`
+	Status    string `json:"status"`
+	Error     string `json:"error"`
 }
 
 type Message struct {

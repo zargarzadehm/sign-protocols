@@ -55,7 +55,7 @@ func (tssController *tssController) Sign() echo.HandlerFunc {
 		if err := c.Bind(&data); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		logging.Debugf("sign data: %+v ", data)
+		logging.Debugf("sign controller called with data: { %v }", data)
 
 		forbiddenOperations := []string{data.Crypto + "Keygen", data.Crypto + "Regroup"}
 		err := tssController.checkOperation(forbiddenOperations)
@@ -86,11 +86,10 @@ func (tssController *tssController) Sign() echo.HandlerFunc {
 func (tssController *tssController) Message() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var data models.Message
-		logging.Infof("message route called")
 		if err := c.Bind(&data); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-
+		logging.Debugf("message controller called with data: {%v}", data)
 		err := tssController.rosenTss.MessageHandler(data)
 		if err != nil {
 			logging.Error(err)
