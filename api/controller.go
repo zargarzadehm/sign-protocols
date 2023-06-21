@@ -55,7 +55,7 @@ func (tssController *tssController) Sign() echo.HandlerFunc {
 		if err := c.Bind(&data); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		logging.Debugf("sign controller called with data: { %v }", data)
+		logging.Debugf("sign controller called with data: {%v}", data)
 
 		forbiddenOperations := []string{data.Crypto + "Keygen", data.Crypto + "Regroup"}
 		err := tssController.checkOperation(forbiddenOperations)

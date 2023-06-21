@@ -249,8 +249,8 @@ func (s *operationEDDSASign) HandleEndMessage(rosenTss _interface.RosenTss, sign
 		Status:    "success",
 	}
 
-	s.Logger.Infof("signing process for Message:{ %s } and Crypto:{ %s } finished.", s.SignMessage.Message, s.SignMessage.Crypto)
-	s.Logger.Debugf("signature: { %v }, Message: { %v }", signData.Signature, signData.Message)
+	s.Logger.Infof("signing process for Message: {%s} and Crypto: {%s} finished.", s.SignMessage.Message, s.SignMessage.Crypto)
+	s.Logger.Debugf("signature: {%v}, Message: {%v}", signData.Signature, signData.Message)
 
 	err := rosenTss.GetConnection().CallBack(s.SignMessage.CallBackUrl, signData)
 	if err != nil {
