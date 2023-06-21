@@ -31,10 +31,10 @@ type connect struct {
 
 var logging *zap.SugaredLogger
 
-func InitConnection(publishPath string, subscriptionPath string, p2pUrl string, getPeerIDPath string) Connection {
-	publishUrl := fmt.Sprintf("%s%s", p2pUrl, publishPath)
-	subscriptionUrl := fmt.Sprintf("%s%s", p2pUrl, subscriptionPath)
-	getPeerIDUrl := fmt.Sprintf("%s%s", p2pUrl, getPeerIDPath)
+func InitConnection(publishPath string, subscriptionPath string, guardUrl string, getPeerIDPath string) Connection {
+	publishUrl := fmt.Sprintf("%s%s", guardUrl, publishPath)
+	subscriptionUrl := fmt.Sprintf("%s%s", guardUrl, subscriptionPath)
+	getPeerIDUrl := fmt.Sprintf("%s%s", guardUrl, getPeerIDPath)
 	logging = logger.NewSugar("connection")
 	return &connect{
 		publishUrl:      publishUrl,

@@ -18,7 +18,7 @@ func main() {
 
 	// parsing cli flags
 	projectUrl := flag.String("host", "http://localhost:4000", "project url (e.g. http://localhost:4000)")
-	p2pUrl := flag.String("p2pUrl", "http://localhost:8080", "p2p url (e.g. http://localhost:8080)")
+	guardUrl := flag.String("guardUrl", "http://localhost:8080", "guard url (e.g. http://localhost:8080)")
 	publishPath := flag.String(
 		"publishPath", "/p2p/send", "publish path of p2p (e.g. /p2p/send)",
 	)
@@ -63,7 +63,7 @@ func main() {
 	// initiating and reading configs
 
 	// creating connection and storage and app instance
-	conn := network.InitConnection(*publishPath, *subscriptionPath, *p2pUrl, *getPeerIDPath)
+	conn := network.InitConnection(*publishPath, *subscriptionPath, *guardUrl, *getPeerIDPath)
 	localStorage := storage.NewStorage()
 
 	tss := app.NewRosenTss(conn, localStorage, config)
