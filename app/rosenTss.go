@@ -45,14 +45,12 @@ func NewRosenTss(connection network.Connection, storage storage.Storage, config 
 }
 
 func (r *rosenTss) errorCallBackCall(signMessage models.SignMessage, err error) {
-	data := struct {
-		Err string `json:"error"`
-		M   string `json:"m"`
-	}{
-		Err: err.Error(),
-		M:   signMessage.Message,
+	data := models.SignData{
+		Message: signMessage.Message,
+		Error:   err.Error(),
+		Status:  "fail",
 	}
-	callbackErr := r.GetConnection().CallBack(signMessage.CallBackUrl, data, "error")
+	callbackErr := r.GetConnection().CallBack(signMessage.CallBackUrl, data)
 	if callbackErr != nil {
 		logging.Error(callbackErr)
 	}
@@ -80,8 +78,6 @@ func (r *rosenTss) StartNewSign(signMessage models.SignMessage) error {
 	var operation _interface.Operation
 	println(signMessage.Crypto)
 	switch signMessage.Crypto {
-	case "ecdsa":
-		operation = eddsaSign.NewSignEDDSAOperation(signMessage)
 	case "eddsa":
 		operation = eddsaSign.NewSignEDDSAOperation(signMessage)
 	default:
@@ -97,9 +93,10 @@ func (r *rosenTss) StartNewSign(signMessage models.SignMessage) error {
 			select {
 			case <-timeout:
 				if _, ok := r.ChannelMap[messageId]; ok {
-					close(r.ChannelMap[messageId])
 					err := fmt.Errorf("sign operation timeout")
 					errorCh <- err
+					time.After(time.Second * 4)
+					close(r.ChannelMap[messageId])
 				}
 				return
 			}
@@ -114,11 +111,12 @@ func (r *rosenTss) StartNewSign(signMessage models.SignMessage) error {
 		logging.Infof("calling start action for %s sign", signMessage.Crypto)
 		err = operation.StartAction(r, r.ChannelMap[messageId], errorCh)
 		if err != nil {
-			logging.Errorf("en error occurred in %s sign action, err: %+v", signMessage.Crypto, err)
+			logging.Errorf("an error occurred in %s sign action, err: %+v", signMessage.Crypto, err)
 			r.errorCallBackCall(signMessage, err)
 		}
 		r.deleteInstance(messageId, channelId, errorCh)
 		logging.Infof("end of %s sign action", signMessage.Crypto)
+		return
 	}()
 
 	return nil
@@ -134,7 +132,8 @@ func (r *rosenTss) MessageHandler(message models.Message) error {
 		return err
 	}
 
-	logging.Debugf("callback route called. new message %+v from: %+v", gossipMsg.MessageId, gossipMsg.SenderId)
+	logging.Infof("callback route called. recevied a message with messageId %+v from: %+v", gossipMsg.MessageId, gossipMsg.SenderId)
+	logging.Debugf("message info is: %+v", gossipMsg)
 
 	// handling recover in case the channel is closed but not removed from the list yet, and there is a message to send on that
 	send := func(c chan models.GossipMessage, t models.GossipMessage) {
@@ -216,9 +215,11 @@ func (r *rosenTss) GetOperations() map[string]_interface.Operation {
 
 //	removes operation and related channel from list
 func (r *rosenTss) deleteInstance(messageId string, channelId string, errorCh chan error) {
+	operationName := r.OperationMap[channelId].GetClassName()
 	delete(r.OperationMap, channelId)
 	delete(r.ChannelMap, messageId)
 	close(errorCh)
+	logging.Infof("operation %s removed for channelId %s and messageId %s", operationName, channelId, messageId)
 }
 
 //	set p2p to the variable

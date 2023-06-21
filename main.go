@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"rosen-bridge/tss-api/api"
@@ -16,8 +17,8 @@ import (
 func main() {
 
 	// parsing cli flags
-	projectPort := flag.String("port", "4000", "project port (e.g. 4000)")
-	p2pPort := flag.String("p2pPort", "8080", "p2p port (e.g. 8080)")
+	projectUrl := flag.String("host", "http://localhost:4000", "project url (e.g. http://localhost:4000)")
+	guardUrl := flag.String("guardUrl", "http://localhost:8080", "guard url (e.g. http://localhost:8080)")
 	publishPath := flag.String(
 		"publishPath", "/p2p/send", "publish path of p2p (e.g. /p2p/send)",
 	)
@@ -62,7 +63,7 @@ func main() {
 	// initiating and reading configs
 
 	// creating connection and storage and app instance
-	conn := network.InitConnection(*publishPath, *subscriptionPath, *p2pPort, *getPeerIDPath)
+	conn := network.InitConnection(*publishPath, *subscriptionPath, *guardUrl, *getPeerIDPath)
 	localStorage := storage.NewStorage()
 
 	tss := app.NewRosenTss(conn, localStorage, config)
@@ -73,7 +74,7 @@ func main() {
 	}
 
 	// subscribe to p2p
-	err = tss.GetConnection().Subscribe(*projectPort)
+	err = tss.GetConnection().Subscribe(*projectUrl)
 	if err != nil {
 		logging.Fatal(err)
 	}
@@ -88,5 +89,8 @@ func main() {
 	}
 
 	api.InitRouting(e, tssController)
-	logging.Fatal(e.Start(fmt.Sprintf(":%s", *projectPort)))
+	hostUrl := fmt.Sprintf("%s", *projectUrl)
+	hostPath := strings.ReplaceAll(hostUrl, "https://", "")
+	hostPath = strings.ReplaceAll(hostPath, "http://", "")
+	logging.Fatal(e.Start(hostPath))
 }

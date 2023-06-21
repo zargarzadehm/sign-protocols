@@ -60,7 +60,7 @@ func (s *operationEDDSASign) Init(rosenTss _interface.RosenTss, peers []models.P
 //	- creates end and out channel for party,
 //	- calls StartParty function of protocol
 //	- handles end channel and out channel in a go routine
-func (s *operationEDDSASign) CreateParty(rosenTss _interface.RosenTss, errorCh chan error) {
+func (s *operationEDDSASign) CreateParty(rosenTss _interface.RosenTss, statusCh chan bool, errorCh chan error) {
 	s.Logger.Info("creating and starting party")
 	msgBytes, _ := utils.Decoder(s.SignMessage.Message)
 	signData := new(big.Int).SetBytes(msgBytes)
@@ -91,6 +91,8 @@ func (s *operationEDDSASign) CreateParty(rosenTss _interface.RosenTss, errorCh c
 			errorCh <- err
 			return
 		} else {
+			s.Logger.Infof("end party successfully")
+			statusCh <- true
 			return
 		}
 	}()
@@ -100,6 +102,7 @@ func (s *operationEDDSASign) CreateParty(rosenTss _interface.RosenTss, errorCh c
 func (s *operationEDDSASign) StartAction(rosenTss _interface.RosenTss, messageCh chan models.GossipMessage, errorCh chan error) error {
 
 	partyStarted := false
+	statusCh := make(chan bool)
 
 	for {
 		select {
@@ -141,11 +144,16 @@ func (s *operationEDDSASign) StartAction(rosenTss _interface.RosenTss, messageCh
 					errorCh <- err
 				}
 				s.Logger.Infof("party is waiting for: %+v", s.LocalTssData.Party.WaitingFor())
+				return
 			}()
+		case end := <-statusCh:
+			if end {
+				return nil
+			}
 		default:
 			if s.LocalTssData.Party == nil && !partyStarted {
 				partyStarted = true
-				s.CreateParty(rosenTss, errorCh)
+				s.CreateParty(rosenTss, statusCh, errorCh)
 				s.Logger.Infof("party is waiting for: %+v", s.LocalTssData.Party.WaitingFor())
 			}
 		}
@@ -237,22 +245,18 @@ func (s *operationEDDSASign) HandleEndMessage(rosenTss _interface.RosenTss, sign
 
 	signData := models.SignData{
 		Signature: utils.Encoder(signatureData.Signature),
-		R:         utils.Encoder(signatureData.R),
-		S:         utils.Encoder(signatureData.S),
-		M:         utils.Encoder(signatureData.M),
+		Message:   utils.Encoder(signatureData.M),
+		Status:    "success",
 	}
 
-	s.Logger.Infof("signing process finished.", s.SignMessage.Crypto)
-	s.Logger.Infof("signning result: R: {%s}, S: {%s}, M:{%s}\n", signData.R, signData.S, signData.M)
-	s.Logger.Infof("signature: %v", signData.Signature)
+	s.Logger.Infof("signing process for Message: {%s} and Crypto: {%s} finished.", s.SignMessage.Message, s.SignMessage.Crypto)
+	s.Logger.Debugf("signature: {%v}, Message: {%v}", signData.Signature, signData.Message)
 
-	err := rosenTss.GetConnection().CallBack(s.SignMessage.CallBackUrl, signData, "ok")
+	err := rosenTss.GetConnection().CallBack(s.SignMessage.CallBackUrl, signData)
 	if err != nil {
 		return err
 	}
-
 	return nil
-
 }
 
 //	- handles all party messages on outCh and endCh
