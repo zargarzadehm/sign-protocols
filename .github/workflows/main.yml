@@ -1,0 +1,39 @@
+name: RELEASE
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  linux-build:
+    name: Linux Build
+    permissions: write-all
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        go: [1.18.0]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout Current Branch
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup GoLang
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Run build
+        run: |
+          go version
+          go build -trimpath -o bin/rosenTss-${{ github.ref_name }}
+
+
+      - name: Upload Binary File
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./bin/rosenTss-*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
