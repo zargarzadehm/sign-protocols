@@ -89,8 +89,7 @@ func main() {
 	}
 
 	api.InitRouting(e, tssController)
-	hostUrl := fmt.Sprintf("%s", *projectUrl)
-	hostPath := strings.ReplaceAll(hostUrl, "https://", "")
+	hostPath := strings.ReplaceAll(*projectUrl, "https://", "")
 	hostPath = strings.ReplaceAll(hostPath, "http://", "")
 	logging.Fatal(e.Start(hostPath))
 }
