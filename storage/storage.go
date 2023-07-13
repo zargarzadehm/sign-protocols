@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -17,6 +18,7 @@ import (
 
 type Storage interface {
 	MakefilePath(peerHome string, protocol string)
+	WriteData(data interface{}, peerHome string, fileFormat string, protocol string) error
 	LoadEDDSAKeygen(peerHome string) (models.TssConfigEDDSA, *tss.PartyID, error)
 }
 
@@ -37,6 +39,43 @@ func NewStorage() Storage {
 //	Constructor of a storage struct
 func (f *storage) MakefilePath(peerHome string, protocol string) {
 	f.filePath = fmt.Sprintf("%s/%s", peerHome, protocol)
+}
+
+// WriteData writing given data to file in given path
+func (f *storage) WriteData(data interface{}, peerHome string, fileFormat string, protocol string) error {
+
+	logging.Info("writing data to the file")
+
+	f.MakefilePath(peerHome, protocol)
+	err := os.MkdirAll(f.filePath, os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	path := filepath.Join(f.filePath, fileFormat)
+
+	logging.Infof("file path: %s", path)
+	fd, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	defer func(fd *os.File) {
+		err := fd.Close()
+		if err != nil {
+			logging.Errorf("unable to Close File %s, err:{%v}", path, err)
+		}
+	}(fd)
+
+	if err != nil {
+		return fmt.Errorf("unable to open File %s for writing, err:{%v}", path, err)
+	}
+	bz, err := json.MarshalIndent(&data, "", "    ")
+	if err != nil {
+		return fmt.Errorf("unable to marshal data, err:{%v}", err)
+	}
+	_, err = fd.Write(bz)
+	if err != nil {
+		return fmt.Errorf("unable to write to File %s", path)
+	}
+	logging.Infof("data was written successfully in a file: %s", path)
+	return nil
 }
 
 //	Loads the EDDSA keygen data from the file

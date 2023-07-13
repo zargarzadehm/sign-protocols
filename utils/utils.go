@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -34,6 +35,11 @@ func GetAbsoluteAddress(address string) (string, error) {
 		return "", fmt.Errorf("wrong address format: %s", address)
 	}
 	return absAddress, nil
+}
+
+// GetPKFromEDDSAPub returns the public key Serialized from an EDDSA public key.
+func GetPKFromEDDSAPub(x *big.Int, y *big.Int) []byte {
+	return edwards.NewPublicKey(x, y).Serialize()
 }
 
 //	reads in config file and ENV variables if set.

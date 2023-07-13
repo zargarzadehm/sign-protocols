@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	keygen "rosen-bridge/tss-api/app/keygen/eddsa"
 	"time"
 
 	"go.uber.org/zap"
@@ -19,14 +20,15 @@ import (
 )
 
 type rosenTss struct {
-	ChannelMap   map[string]chan models.GossipMessage
-	OperationMap map[string]_interface.Operation
-	metaData     models.MetaData
-	storage      storage.Storage
-	connection   network.Connection
-	Config       models.Config
-	peerHome     string
-	P2pId        string
+	ChannelMap         map[string]chan models.GossipMessage
+	KeygenOperationMap map[string]_interface.KeygenOperation
+	SignOperationMap   map[string]_interface.SignOperation
+	metaData           models.MetaData
+	storage            storage.Storage
+	connection         network.Connection
+	Config             models.Config
+	peerHome           string
+	P2pId              string
 }
 
 var logging *zap.SugaredLogger
@@ -35,25 +37,94 @@ var logging *zap.SugaredLogger
 func NewRosenTss(connection network.Connection, storage storage.Storage, config models.Config) _interface.RosenTss {
 	logging = logger.NewSugar("app")
 	return &rosenTss{
-		ChannelMap:   make(map[string]chan models.GossipMessage),
-		OperationMap: make(map[string]_interface.Operation),
-		metaData:     models.MetaData{},
-		storage:      storage,
-		connection:   connection,
-		Config:       config,
+		ChannelMap:         make(map[string]chan models.GossipMessage),
+		KeygenOperationMap: make(map[string]_interface.KeygenOperation),
+		SignOperationMap:   make(map[string]_interface.SignOperation),
+		metaData:           models.MetaData{},
+		storage:            storage,
+		connection:         connection,
+		Config:             config,
 	}
 }
 
-func (r *rosenTss) errorCallBackCall(signMessage models.SignMessage, err error) {
-	data := models.SignData{
-		Message: signMessage.Message,
-		Error:   err.Error(),
-		Status:  "fail",
-	}
-	callbackErr := r.GetConnection().CallBack(signMessage.CallBackUrl, data)
+func (r *rosenTss) errorCallBackCall(data interface{}, callBackUrl string) {
+	callbackErr := r.GetConnection().CallBack(callBackUrl, data)
 	if callbackErr != nil {
 		logging.Error(callbackErr)
 	}
+}
+
+func (r *rosenTss) timeOutGoRoutine(operationName string, messageId string, errorCh chan error) {
+	go func() {
+		timeout := time.After(time.Second * time.Duration(r.Config.OperationTimeout))
+		for {
+			select {
+			case <-timeout:
+				if _, ok := r.ChannelMap[messageId]; ok {
+					err := fmt.Errorf("%s operation timeout", operationName)
+					errorCh <- err
+					time.After(time.Second * 4)
+					close(r.ChannelMap[messageId])
+				}
+				return
+			}
+		}
+	}()
+}
+
+// StartNewKeygen starts keygen scenario for app based on given protocol.
+func (r *rosenTss) StartNewKeygen(keygenMessage models.KeygenMessage) error {
+	logging.Info("Starting New keygen process")
+
+	path := fmt.Sprintf("%s/%s/%s", r.GetPeerHome(), keygenMessage.Crypto, "keygen_data.json")
+	if _, err := os.Stat(path); err == nil {
+		return fmt.Errorf(models.KeygenFileExistError)
+	}
+
+	messageId := fmt.Sprintf("%s%s", keygenMessage.Crypto, "Keygen")
+	_, ok := r.ChannelMap[messageId]
+	if !ok {
+		messageCh := make(chan models.GossipMessage, 100)
+		r.ChannelMap[messageId] = messageCh
+		logging.Infof("creating new channel in StartNewKeygen: %v", messageId)
+	} else {
+		return fmt.Errorf(models.DuplicatedMessageIdError)
+	}
+
+	var operation _interface.KeygenOperation
+	switch keygenMessage.Crypto {
+	case "eddsa":
+		operation = keygen.NewKeygenEDDSAOperation(keygenMessage)
+	default:
+		return fmt.Errorf(models.WrongCryptoProtocolError)
+	}
+	channelId := operation.GetClassName()
+	r.KeygenOperationMap[channelId] = operation
+
+	errorCh := make(chan error)
+	r.timeOutGoRoutine(operation.GetClassName(), messageId, errorCh)
+
+	err := operation.Init(r, keygenMessage.P2PIDs)
+	if err != nil {
+		return err
+	}
+	go func() {
+		logging.Infof("calling start action for %s keygen", keygenMessage.Crypto)
+		err = operation.StartAction(r, r.ChannelMap[messageId], errorCh)
+		if err != nil {
+			logging.Errorf("an error occurred in %s keygen action, err: %+v", keygenMessage.Crypto, err)
+			data := models.FailKeygenData{
+				Error:  err.Error(),
+				Status: "fail",
+			}
+			r.errorCallBackCall(data, keygenMessage.CallBackUrl)
+		}
+		r.deleteInstance(messageId, channelId, errorCh)
+		logging.Infof("end of %s keygen action", keygenMessage.Crypto)
+		return
+	}()
+
+	return nil
 }
 
 //	starts sign scenario for app based on given protocol.
@@ -75,7 +146,7 @@ func (r *rosenTss) StartNewSign(signMessage models.SignMessage) error {
 		return fmt.Errorf(models.DuplicatedMessageIdError)
 	}
 
-	var operation _interface.Operation
+	var operation _interface.SignOperation
 	println(signMessage.Crypto)
 	switch signMessage.Crypto {
 	case "eddsa":
@@ -84,24 +155,10 @@ func (r *rosenTss) StartNewSign(signMessage models.SignMessage) error {
 		return fmt.Errorf(models.WrongCryptoProtocolError)
 	}
 	channelId := fmt.Sprintf("%s%s", operation.GetClassName(), messageId)
-	r.OperationMap[channelId] = operation
-	errorCh := make(chan error)
+	r.SignOperationMap[channelId] = operation
 
-	go func() {
-		timeout := time.After(time.Second * time.Duration(r.Config.OperationTimeout))
-		for {
-			select {
-			case <-timeout:
-				if _, ok := r.ChannelMap[messageId]; ok {
-					err := fmt.Errorf("sign operation timeout")
-					errorCh <- err
-					time.After(time.Second * 4)
-					close(r.ChannelMap[messageId])
-				}
-				return
-			}
-		}
-	}()
+	errorCh := make(chan error)
+	r.timeOutGoRoutine(operation.GetClassName(), messageId, errorCh)
 
 	err := operation.Init(r, signMessage.Peers)
 	if err != nil {
@@ -112,7 +169,12 @@ func (r *rosenTss) StartNewSign(signMessage models.SignMessage) error {
 		err = operation.StartAction(r, r.ChannelMap[messageId], errorCh)
 		if err != nil {
 			logging.Errorf("an error occurred in %s sign action, err: %+v", signMessage.Crypto, err)
-			r.errorCallBackCall(signMessage, err)
+			data := models.SignData{
+				Message: signMessage.Message,
+				Error:   err.Error(),
+				Status:  "fail",
+			}
+			r.errorCallBackCall(data, signMessage.CallBackUrl)
 		}
 		r.deleteInstance(messageId, channelId, errorCh)
 		logging.Infof("end of %s sign action", signMessage.Crypto)
@@ -209,14 +271,19 @@ func (r *rosenTss) GetMetaData() models.MetaData {
 }
 
 //	returns list of operations
-func (r *rosenTss) GetOperations() map[string]_interface.Operation {
-	return r.OperationMap
+func (r *rosenTss) GetKeygenOperations() map[string]_interface.KeygenOperation {
+	return r.KeygenOperationMap
+}
+
+//	returns list of operations
+func (r *rosenTss) GetSignOperations() map[string]_interface.SignOperation {
+	return r.SignOperationMap
 }
 
 //	removes operation and related channel from list
 func (r *rosenTss) deleteInstance(messageId string, channelId string, errorCh chan error) {
-	operationName := r.OperationMap[channelId].GetClassName()
-	delete(r.OperationMap, channelId)
+	operationName := r.SignOperationMap[channelId].GetClassName()
+	delete(r.SignOperationMap, channelId)
 	delete(r.ChannelMap, messageId)
 	close(errorCh)
 	logging.Infof("operation %s removed for channelId %s and messageId %s", operationName, channelId, messageId)
