@@ -161,7 +161,7 @@ func (s *operationEDDSASign) StartAction(rosenTss _interface.RosenTss, messageCh
 }
 
 //	- create eddsa sign operation
-func NewSignEDDSAOperation(signMessage models.SignMessage) _interface.Operation {
+func NewSignEDDSAOperation(signMessage models.SignMessage) _interface.SignOperation {
 	logging = logger.NewSugar("eddsa-sign")
 	return &operationEDDSASign{
 		StructSign: sign.StructSign{
@@ -195,7 +195,6 @@ func (s *operationEDDSASign) NewMessage(rosenTss _interface.RosenTss, payload mo
 		MessageId:  payload.MessageId,
 		SenderId:   payload.SenderId,
 		ReceiverId: receiver,
-		Index:      index,
 	}
 	err := rosenTss.GetConnection().Publish(gossipMessage)
 	if err != nil {
@@ -208,13 +207,14 @@ func (s *operationEDDSASign) NewMessage(rosenTss _interface.RosenTss, payload mo
 //	- creates payload from party message
 //	- send it to NewMessage function
 func (s *operationEDDSASign) HandleOutMessage(rosenTss _interface.RosenTss, partyMsg tss.Message) error {
-	msgBytes, _ := utils.Decoder(s.SignMessage.Message)
-	signData := new(big.Int).SetBytes(msgBytes)
 	msgHex, err := s.SignOperationHandler.PartyMessageHandler(partyMsg)
 	if err != nil {
 		s.Logger.Errorf("there was an error in parsing party message to the struct: %+v", err)
 		return err
 	}
+
+	msgBytes, _ := utils.Decoder(s.SignMessage.Message)
+	signData := new(big.Int).SetBytes(msgBytes)
 	messageBytes := blake2b.Sum256(signData.Bytes())
 	messageId := fmt.Sprintf("%s%s", s.SignMessage.Crypto, utils.Encoder(messageBytes[:]))
 	payload := models.Payload{
