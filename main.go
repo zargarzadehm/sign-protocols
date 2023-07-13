@@ -26,7 +26,7 @@ func main() {
 		"subscriptionPath", "/p2p/channel/subscribe", "subscriptionPath for p2p (e.g. /p2p/channel/subscribe)",
 	)
 	getPeerIDPath := flag.String(
-		"getP2pIDPath", "/p2p/getPeerID", "getP2pIDPath for p2p (e.g. /p2p/getPeerID)",
+		"getP2PIDPath", "/p2p/getPeerID", "getP2PIDPath for p2p (e.g. /p2p/getPeerID)",
 	)
 	configFile := flag.String(
 		"configFile", "./conf/conf.env", "config file",
