@@ -1,0 +1,43 @@
+image: golang:1.18
+
+stages:
+  - prepare_go
+  - lint
+  - build
+
+preparing:
+  stage: prepare_go
+  cache:
+    key: $CI_COMMIT_REF_NAME
+    policy: push
+    paths:
+      - .go
+  script:
+    - echo "prepare_go"
+    - mkdir -p .go
+    - go env -w GO111MODULE=on
+    - go env -w GOPROXY="https://goproxy.io,direct"
+
+lint:
+  stage: lint
+  cache:
+    key: $CI_COMMIT_REF_NAME
+    policy: pull
+    paths:
+      - .go
+  script:
+    - go vet .
+    - staticcheck .
+
+build:
+  stage: build
+  cache:
+    key: $CI_COMMIT_REF_NAME
+    policy: pull
+    paths:
+      - .go
+  script:
+    - go build -trimpath -o bin/rosenTss
+  artifacts:
+    paths:
+      - bin/
