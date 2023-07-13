@@ -5,18 +5,21 @@ stages:
   - lint
   - build
 
+variables:
+  GOPATH: $CI_PROJECT_DIR/.go
+
 preparing:
   stage: prepare_go
   cache:
     key: $CI_COMMIT_REF_NAME
     policy: push
     paths:
-      - .go
+      - $CI_PROJECT_DIR/.go
   script:
     - echo "prepare_go"
-    - mkdir -p .go
     - go env -w GO111MODULE=on
     - go env -w GOPROXY="https://goproxy.io,direct"
+    - go install honnef.co/go/tools/cmd/staticcheck@2022.1.3
 
 lint:
   stage: lint
@@ -24,10 +27,10 @@ lint:
     key: $CI_COMMIT_REF_NAME
     policy: pull
     paths:
-      - .go
+      - $CI_PROJECT_DIR/.go
   script:
     - go vet .
-    - staticcheck .
+    - $(go env GOPATH)/bin/staticcheck .
 
 build:
   stage: build
@@ -35,7 +38,7 @@ build:
     key: $CI_COMMIT_REF_NAME
     policy: pull
     paths:
-      - .go
+      - $CI_PROJECT_DIR/.go
   script:
     - go build -trimpath -o bin/rosenTss
   artifacts:
