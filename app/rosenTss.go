@@ -119,7 +119,7 @@ func (r *rosenTss) StartNewKeygen(keygenMessage models.KeygenMessage) error {
 			}
 			r.errorCallBackCall(data, keygenMessage.CallBackUrl)
 		}
-		r.deleteInstance(messageId, channelId, errorCh)
+		r.deleteInstance("keygen", messageId, channelId, errorCh)
 		logging.Infof("end of %s keygen action", keygenMessage.Crypto)
 		return
 	}()
@@ -130,10 +130,10 @@ func (r *rosenTss) StartNewKeygen(keygenMessage models.KeygenMessage) error {
 //	starts sign scenario for app based on given protocol.
 func (r *rosenTss) StartNewSign(signMessage models.SignMessage) error {
 	logging.Info("Starting New Sign process")
-	msgBytes, _ := utils.Decoder(signMessage.Message)
+	msgBytes, _ := utils.HexDecoder(signMessage.Message)
 	signData := new(big.Int).SetBytes(msgBytes)
 	signDataBytes := blake2b.Sum256(signData.Bytes())
-	signDataHash := utils.Encoder(signDataBytes[:])
+	signDataHash := utils.HexEncoder(signDataBytes[:])
 	logging.Infof("encoded sign data: %v", signDataHash)
 
 	messageId := fmt.Sprintf("%s%s", signMessage.Crypto, signDataHash)
@@ -176,7 +176,7 @@ func (r *rosenTss) StartNewSign(signMessage models.SignMessage) error {
 			}
 			r.errorCallBackCall(data, signMessage.CallBackUrl)
 		}
-		r.deleteInstance(messageId, channelId, errorCh)
+		r.deleteInstance("sign", messageId, channelId, errorCh)
 		logging.Infof("end of %s sign action", signMessage.Crypto)
 		return
 	}()
@@ -281,12 +281,33 @@ func (r *rosenTss) GetSignOperations() map[string]_interface.SignOperation {
 }
 
 //	removes operation and related channel from list
-func (r *rosenTss) deleteInstance(messageId string, channelId string, errorCh chan error) {
-	operationName := r.SignOperationMap[channelId].GetClassName()
+func (r *rosenTss) deleteInstance(operationType string, messageId string, channelId string, errorCh chan error) {
+	switch operationType {
+	case "keygen":
+		r.deleteKeygenInstance(messageId, channelId, errorCh)
+	case "sign":
+		r.deleteSignInstance(messageId, channelId, errorCh)
+	}
+}
+
+//	removes operation and related channel for Keygen operation
+func (r *rosenTss) deleteKeygenInstance(messageId string, channelId string, errorCh chan error) {
+	operationName := r.KeygenOperationMap[channelId].GetClassName()
+	logging.Debugf("deleting %s for channelId %s and messageId %s for keygen operation", operationName, channelId, messageId)
 	delete(r.SignOperationMap, channelId)
 	delete(r.ChannelMap, messageId)
 	close(errorCh)
-	logging.Infof("operation %s removed for channelId %s and messageId %s", operationName, channelId, messageId)
+	logging.Infof("operation %s removed for channelId %s and messageId %s for keygen operation", operationName, channelId, messageId)
+}
+
+//	removes operation and related channel for sign Operation
+func (r *rosenTss) deleteSignInstance(messageId string, channelId string, errorCh chan error) {
+	operationName := r.SignOperationMap[channelId].GetClassName()
+	logging.Debugf("deleting %s for channelId %s and messageId %s for sign operation", operationName, channelId, messageId)
+	delete(r.SignOperationMap, channelId)
+	delete(r.ChannelMap, messageId)
+	close(errorCh)
+	logging.Infof("operation %s removed for channelId %s and messageId %s for sign operation", operationName, channelId, messageId)
 }
 
 //	set p2p to the variable

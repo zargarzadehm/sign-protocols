@@ -62,7 +62,7 @@ func (s *operationEDDSASign) Init(rosenTss _interface.RosenTss, peers []models.P
 //	- handles end channel and out channel in a go routine
 func (s *operationEDDSASign) CreateParty(rosenTss _interface.RosenTss, statusCh chan bool, errorCh chan error) {
 	s.Logger.Info("creating and starting party")
-	msgBytes, _ := utils.Decoder(s.SignMessage.Message)
+	msgBytes, _ := utils.HexDecoder(s.SignMessage.Message)
 	signData := new(big.Int).SetBytes(msgBytes)
 
 	outCh := make(chan tss.Message, len(s.LocalTssData.PartyIds))
@@ -120,7 +120,7 @@ func (s *operationEDDSASign) StartAction(rosenTss _interface.RosenTss, messageCh
 				return fmt.Errorf("communication channel is closed")
 			}
 			s.Logger.Infof("received new message from {%s} on communication channel", msg.SenderId)
-			msgBytes, err := utils.Decoder(msg.Message)
+			msgBytes, err := utils.HexDecoder(msg.Message)
 			if err != nil {
 				return err
 			}
@@ -213,10 +213,10 @@ func (s *operationEDDSASign) HandleOutMessage(rosenTss _interface.RosenTss, part
 		return err
 	}
 
-	msgBytes, _ := utils.Decoder(s.SignMessage.Message)
+	msgBytes, _ := utils.HexDecoder(s.SignMessage.Message)
 	signData := new(big.Int).SetBytes(msgBytes)
 	messageBytes := blake2b.Sum256(signData.Bytes())
-	messageId := fmt.Sprintf("%s%s", s.SignMessage.Crypto, utils.Encoder(messageBytes[:]))
+	messageId := fmt.Sprintf("%s%s", s.SignMessage.Crypto, utils.HexEncoder(messageBytes[:]))
 	payload := models.Payload{
 		Message:   msgHex,
 		MessageId: messageId,
@@ -244,8 +244,8 @@ func (s *operationEDDSASign) HandleOutMessage(rosenTss _interface.RosenTss, part
 func (s *operationEDDSASign) HandleEndMessage(rosenTss _interface.RosenTss, signatureData *common.SignatureData) error {
 
 	signData := models.SignData{
-		Signature: utils.Encoder(signatureData.Signature),
-		Message:   utils.Encoder(signatureData.M),
+		Signature: utils.HexEncoder(signatureData.Signature),
+		Message:   utils.HexEncoder(signatureData.M),
 		Status:    "success",
 	}
 

@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/btcsuite/btcutil/base58"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"math/big"
 	"os"
@@ -71,10 +72,14 @@ func IndexOf(collection []*big.Int, el *big.Int) int {
 	return -1
 }
 
-func Decoder(message string) ([]byte, error) {
+func HexDecoder(message string) ([]byte, error) {
 	return hex.DecodeString(message)
 }
 
-func Encoder(message []byte) string {
+func HexEncoder(message []byte) string {
 	return hex.EncodeToString(message)
+}
+
+func Base58Decoder(text string) []byte {
+	return base58.Decode(text)
 }

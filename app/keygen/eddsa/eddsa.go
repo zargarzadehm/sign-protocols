@@ -42,14 +42,15 @@ func (s *operationEDDSAKeygen) Init(rosenTss _interface.RosenTss, peers []string
 		return err
 	}
 
+	selfP2PID := rosenTss.GetP2pId()
 	var unsortedPeers []*tss.PartyID
 	if s.LocalTssData.PartyID == nil {
-		for index, peer := range peers {
-			shareId, _ := new(big.Int).SetString(peer, 10)
+		for _, peer := range peers {
 			moniker := fmt.Sprintf("tssPeer/%s", peer)
+			shareId := new(big.Int).SetBytes(utils.Base58Decoder(peer))
 			newPartyID := tss.NewPartyID(peer, moniker, shareId)
 			unsortedPeers = append(unsortedPeers, newPartyID)
-			if index == 0 {
+			if peer == selfP2PID {
 				s.LocalTssData.PartyID = newPartyID
 			}
 		}
@@ -124,7 +125,7 @@ func (s *operationEDDSAKeygen) StartAction(rosenTss _interface.RosenTss, message
 				return fmt.Errorf("communication channel is closed")
 			}
 			s.Logger.Infof("received new message from {%s} on communication channel", msg.SenderId)
-			msgBytes, err := utils.Decoder(msg.Message)
+			msgBytes, err := utils.HexDecoder(msg.Message)
 			if err != nil {
 				return err
 			}
