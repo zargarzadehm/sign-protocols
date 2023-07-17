@@ -72,6 +72,18 @@ func IndexOf(collection []*big.Int, el *big.Int) int {
 	return -1
 }
 
+//	setups files and creates them
+func SetupDir(address string) (string, error) {
+	absAddress, err := GetAbsoluteAddress(address)
+	if err != nil {
+		return "", err
+	}
+	if err := os.MkdirAll(absAddress, os.ModePerm); err != nil {
+		return "", err
+	}
+	return absAddress, nil
+}
+
 func HexDecoder(message string) ([]byte, error) {
 	return hex.DecodeString(message)
 }

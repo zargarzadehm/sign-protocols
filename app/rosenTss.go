@@ -242,15 +242,11 @@ func (r *rosenTss) GetConnection() network.Connection {
 func (r *rosenTss) SetPeerHome(homeAddress string) error {
 	logging.Info("setting up home directory")
 
-	absAddress, err := utils.GetAbsoluteAddress(homeAddress)
+	absAddress, err := utils.SetupDir(homeAddress)
 	if err != nil {
 		return err
 	}
 	r.peerHome = absAddress
-
-	if err := os.MkdirAll(r.peerHome, os.ModePerm); err != nil {
-		return err
-	}
 	return nil
 }
 

@@ -93,6 +93,7 @@ type PartyMessage struct {
 
 type Config struct {
 	HomeAddress                string  `mapstructure:"HOME_ADDRESS"`
+	LogAddress                 string  `mapstructure:"LOG_ADDRESS"`
 	LogLevel                   string  `mapstructure:"LOG_LEVEL"`
 	LogMaxSize                 int     `mapstructure:"LOG_MAX_SIZE"`
 	LogMaxBackups              int     `mapstructure:"LOG_MAX_BACKUPS"`
