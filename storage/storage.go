@@ -59,7 +59,7 @@ func (f *storage) WriteData(data interface{}, peerHome string, fileFormat string
 	defer func(fd *os.File) {
 		err := fd.Close()
 		if err != nil {
-			logging.Errorf("unable to Close File %s, err:{%v}", path, err)
+			logging.Errorf("unable to close file %s, err:{%v}", path, err)
 		}
 	}(fd)
 
