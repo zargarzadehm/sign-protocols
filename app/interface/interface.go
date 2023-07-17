@@ -6,8 +6,15 @@ import (
 	"rosen-bridge/tss-api/storage"
 )
 
+//	(keygen eddsa protocol)
+type KeygenOperation interface {
+	Init(RosenTss, []string) error
+	StartAction(RosenTss, chan models.GossipMessage, chan error) error
+	GetClassName() string
+}
+
 //	(sign eddsa protocol)
-type Operation interface {
+type SignOperation interface {
 	Init(RosenTss, []models.Peer) error
 	StartAction(RosenTss, chan models.GossipMessage, chan error) error
 	GetClassName() string
@@ -15,6 +22,7 @@ type Operation interface {
 
 //	Interface of an app
 type RosenTss interface {
+	StartNewKeygen(models.KeygenMessage) error
 	StartNewSign(models.SignMessage) error
 	MessageHandler(models.Message) error
 
@@ -27,7 +35,8 @@ type RosenTss interface {
 	SetPeerHome(string) error
 	GetPeerHome() string
 
-	GetOperations() map[string]Operation
+	GetKeygenOperations() map[string]KeygenOperation
+	GetSignOperations() map[string]SignOperation
 
 	SetP2pId() error
 	GetP2pId() string

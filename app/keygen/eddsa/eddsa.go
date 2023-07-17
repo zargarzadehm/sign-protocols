@@ -1,25 +1,24 @@
 package eddsa
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/bnb-chain/tss-lib/common"
 	eddsaKeygen "github.com/bnb-chain/tss-lib/eddsa/keygen"
-	eddsaSigning "github.com/bnb-chain/tss-lib/eddsa/signing"
 	"github.com/bnb-chain/tss-lib/tss"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"go.uber.org/zap"
-	"golang.org/x/crypto/blake2b"
 	"math/big"
 	"rosen-bridge/tss-api/app/interface"
-	"rosen-bridge/tss-api/app/sign"
+	"rosen-bridge/tss-api/app/keygen"
 	"rosen-bridge/tss-api/logger"
 	"rosen-bridge/tss-api/models"
 	"rosen-bridge/tss-api/utils"
 	"time"
 )
 
-type operationEDDSASign struct {
-	sign.StructSign
+type operationEDDSAKeygen struct {
+	keygen.StructKeygen
 }
 
 type handler struct {
@@ -29,30 +28,38 @@ type handler struct {
 var logging *zap.SugaredLogger
 var eddsaHandler handler
 
-//	- Initializes the eddsa sign partyId and peers
-func (s *operationEDDSASign) Init(rosenTss _interface.RosenTss, peers []models.Peer) error {
+//	- Initializes the eddsa keygen partyId metaData and peers
+func (s *operationEDDSAKeygen) Init(rosenTss _interface.RosenTss, peers []string) error {
 
-	s.Logger.Info("initiation signing process")
+	s.Logger.Info("initiation keygen process")
 
-	pID, err := s.LoadData(rosenTss)
+	meta := models.MetaData{
+		PeersCount: s.KeygenMessage.PeersCount,
+		Threshold:  s.KeygenMessage.Threshold,
+	}
+	err := rosenTss.SetMetaData(meta)
 	if err != nil {
-		s.Logger.Error(err)
 		return err
 	}
 
+	selfP2PID := rosenTss.GetP2pId()
 	var unsortedPeers []*tss.PartyID
-	for _, peer := range peers {
-		moniker := fmt.Sprintf("tssPeer/%s", peer.P2PId)
-		shareId, _ := new(big.Int).SetString(peer.ShareId, 10)
-		unsortedPeers = append(unsortedPeers, tss.NewPartyID(peer.P2PId, moniker, shareId))
+	if s.LocalTssData.PartyID == nil {
+		for _, peer := range peers {
+			moniker := fmt.Sprintf("tssPeer/%s", peer)
+			shareId := new(big.Int).SetBytes(utils.Base58Decoder(peer))
+			newPartyID := tss.NewPartyID(peer, moniker, shareId)
+			unsortedPeers = append(unsortedPeers, newPartyID)
+			if peer == selfP2PID {
+				s.LocalTssData.PartyID = newPartyID
+			}
+		}
 	}
 
-	signPIDs := tss.SortPartyIDs(unsortedPeers)
+	keygenPIDs := tss.SortPartyIDs(unsortedPeers)
+	s.LocalTssData.PartyIds = keygenPIDs
 
-	s.LocalTssData.PartyID = pID
-	s.LocalTssData.PartyIds = signPIDs
-
-	s.Logger.Infof("local PartyId: %+v", pID)
+	s.Logger.Infof("local PartyId: %+v", s.LocalTssData.PartyID)
 
 	return nil
 }
@@ -60,17 +67,15 @@ func (s *operationEDDSASign) Init(rosenTss _interface.RosenTss, peers []models.P
 //	- creates end and out channel for party,
 //	- calls StartParty function of protocol
 //	- handles end channel and out channel in a go routine
-func (s *operationEDDSASign) CreateParty(rosenTss _interface.RosenTss, statusCh chan bool, errorCh chan error) {
+func (s *operationEDDSAKeygen) CreateParty(rosenTss _interface.RosenTss, statusCh chan bool, errorCh chan error) {
 	s.Logger.Info("creating and starting party")
-	msgBytes, _ := utils.HexDecoder(s.SignMessage.Message)
-	signData := new(big.Int).SetBytes(msgBytes)
 
 	outCh := make(chan tss.Message, len(s.LocalTssData.PartyIds))
-	endCh := make(chan common.SignatureData, len(s.LocalTssData.PartyIds))
+	endCh := make(chan eddsaKeygen.LocalPartySaveData, len(s.LocalTssData.PartyIds))
 
 	threshold := rosenTss.GetMetaData().Threshold
 
-	err := s.StartParty(&s.LocalTssData, threshold, signData, outCh, endCh)
+	err := s.StartParty(&s.LocalTssData, threshold, outCh, endCh)
 	if err != nil {
 		s.Logger.Errorf("there was an error in starting party: %+v", err)
 		errorCh <- err
@@ -99,7 +104,7 @@ func (s *operationEDDSASign) CreateParty(rosenTss _interface.RosenTss, statusCh 
 }
 
 //	- reads new gossip messages from channel and handle it by calling related function in a go routine.
-func (s *operationEDDSASign) StartAction(rosenTss _interface.RosenTss, messageCh chan models.GossipMessage, errorCh chan error) error {
+func (s *operationEDDSAKeygen) StartAction(rosenTss _interface.RosenTss, messageCh chan models.GossipMessage, errorCh chan error) error {
 
 	partyStarted := false
 	statusCh := make(chan bool)
@@ -160,35 +165,28 @@ func (s *operationEDDSASign) StartAction(rosenTss _interface.RosenTss, messageCh
 	}
 }
 
-//	- create eddsa sign operation
-func NewSignEDDSAOperation(signMessage models.SignMessage) _interface.SignOperation {
-	logging = logger.NewSugar("eddsa-sign")
-	return &operationEDDSASign{
-		StructSign: sign.StructSign{
-			SignMessage: signMessage,
-			Signatures:  make(map[int][]byte),
-			Logger:      logging,
-			Handler:     &eddsaHandler,
+//	- create eddsa keygen operation
+func NewKeygenEDDSAOperation(keygenMessage models.KeygenMessage) _interface.KeygenOperation {
+	logging = logger.NewSugar("eddsa-keygen")
+	return &operationEDDSAKeygen{
+		StructKeygen: keygen.StructKeygen{
+			KeygenMessage: keygenMessage,
+			Logger:        logging,
+			Handler:       &eddsaHandler,
 		},
 	}
 }
 
 //	- returns the class name
-func (s *operationEDDSASign) GetClassName() string {
-	return "eddsaSign"
+func (s *operationEDDSAKeygen) GetClassName() string {
+	return "eddsaKeygen"
 }
 
 //	- finds the index of peer in the key list.
 //	- creates a gossip message from payload.
 //	- sends the gossip message to Publish function.
-func (s *operationEDDSASign) NewMessage(rosenTss _interface.RosenTss, payload models.Payload, receiver string) error {
+func (s *operationEDDSAKeygen) NewMessage(rosenTss _interface.RosenTss, payload models.Payload, receiver string) error {
 	s.Logger.Infof("creating new gossip message")
-	keyList, sharedId := s.GetData()
-
-	index := utils.IndexOf(keyList, sharedId)
-	if index == -1 {
-		return fmt.Errorf("party index not found")
-	}
 
 	gossipMessage := models.GossipMessage{
 		Message:    payload.Message,
@@ -206,17 +204,14 @@ func (s *operationEDDSASign) NewMessage(rosenTss _interface.RosenTss, payload mo
 //	- handles party messages on out channel
 //	- creates payload from party message
 //	- send it to NewMessage function
-func (s *operationEDDSASign) HandleOutMessage(rosenTss _interface.RosenTss, partyMsg tss.Message) error {
-	msgHex, err := s.SignOperationHandler.PartyMessageHandler(partyMsg)
+func (s *operationEDDSAKeygen) HandleOutMessage(rosenTss _interface.RosenTss, partyMsg tss.Message) error {
+	msgHex, err := s.KeygenOperationHandler.PartyMessageHandler(partyMsg)
 	if err != nil {
 		s.Logger.Errorf("there was an error in parsing party message to the struct: %+v", err)
 		return err
 	}
 
-	msgBytes, _ := utils.HexDecoder(s.SignMessage.Message)
-	signData := new(big.Int).SetBytes(msgBytes)
-	messageBytes := blake2b.Sum256(signData.Bytes())
-	messageId := fmt.Sprintf("%s%s", s.SignMessage.Crypto, utils.HexEncoder(messageBytes[:]))
+	messageId := s.GetClassName()
 	payload := models.Payload{
 		Message:   msgHex,
 		MessageId: messageId,
@@ -239,30 +234,51 @@ func (s *operationEDDSASign) HandleOutMessage(rosenTss _interface.RosenTss, part
 	return nil
 }
 
-//	- handles save data (signature) on end channel of party
+//	- handles save data (keygen data) on end channel of party
 //	- logs the data and send it to CallBack
-func (s *operationEDDSASign) HandleEndMessage(rosenTss _interface.RosenTss, signatureData *common.SignatureData) error {
+func (s *operationEDDSAKeygen) HandleEndMessage(rosenTss _interface.RosenTss, keygenData *eddsaKeygen.LocalPartySaveData) error {
 
-	signData := models.SignData{
-		Signature: utils.HexEncoder(signatureData.Signature),
-		Message:   utils.HexEncoder(signatureData.M),
-		Status:    "success",
+	pkX, pkY := keygenData.EDDSAPub.X(), keygenData.EDDSAPub.Y()
+	pk := edwards.PublicKey{
+		Curve: tss.Edwards(),
+		X:     pkX,
+		Y:     pkY,
 	}
 
-	s.Logger.Infof("signing process for Message: {%s} and Crypto: {%s} finished.", s.SignMessage.Message, s.SignMessage.Crypto)
-	s.Logger.Debugf("signature: {%v}, Message: {%v}", signData.Signature, signData.Message)
+	public := utils.GetPKFromEDDSAPub(pk.X, pk.Y)
+	encodedPK := hex.EncodeToString(public)
+	shareIDStr := keygenData.ShareID.String()
 
-	err := rosenTss.GetConnection().CallBack(s.SignMessage.CallBackUrl, signData)
+	keygenResponse := models.KeygenData{
+		ShareID: shareIDStr,
+		PubKey:  encodedPK,
+		Status:  "success",
+	}
+	tssConfigEDDSA := models.TssConfigEDDSA{
+		MetaData:   rosenTss.GetMetaData(),
+		KeygenData: *keygenData,
+	}
+
+	s.Logger.Infof("hex pubKey: %v", encodedPK)
+	s.Logger.Infof("keygen process for ShareId: {%s} and Crypto: {%s} finished.", shareIDStr, s.KeygenMessage.Crypto)
+
+	err := rosenTss.GetStorage().WriteData(tssConfigEDDSA, rosenTss.GetPeerHome(), keygen.KeygenFileName, "eddsa")
 	if err != nil {
 		return err
 	}
+
+	err = rosenTss.GetConnection().CallBack(s.KeygenMessage.CallBackUrl, keygenResponse)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 //	- handles all party messages on outCh and endCh
 //	- listens to channels and send the message to the right function
-func (s *operationEDDSASign) GossipMessageHandler(
-	rosenTss _interface.RosenTss, outCh chan tss.Message, endCh chan common.SignatureData,
+func (s *operationEDDSAKeygen) GossipMessageHandler(
+	rosenTss _interface.RosenTss, outCh chan tss.Message, endCh chan eddsaKeygen.LocalPartySaveData,
 ) (bool, error) {
 	for {
 		select {
@@ -285,9 +301,8 @@ func (s *operationEDDSASign) GossipMessageHandler(
 func (h *handler) StartParty(
 	localTssData *models.TssData,
 	threshold int,
-	signData *big.Int,
 	outCh chan tss.Message,
-	endCh chan common.SignatureData,
+	endCh chan eddsaKeygen.LocalPartySaveData,
 ) error {
 	if localTssData.Party == nil {
 		ctx := tss.NewPeerContext(localTssData.PartyIds)
@@ -300,7 +315,7 @@ func (h *handler) StartParty(
 			}
 		}
 		localTssData.Params = tss.NewParameters(tss.Edwards(), ctx, localPartyId, len(localTssData.PartyIds), threshold)
-		localTssData.Party = eddsaSigning.NewLocalParty(signData, localTssData.Params, h.savedData, outCh, endCh)
+		localTssData.Party = eddsaKeygen.NewLocalParty(localTssData.Params, outCh, endCh)
 
 		if err := localTssData.Party.Start(); err != nil {
 			return err
@@ -308,31 +323,4 @@ func (h *handler) StartParty(
 		logging.Info("party started")
 	}
 	return nil
-}
-
-//	- loads keygen data from file for signing
-//	- creates tss party ID with p2pID
-func (h *handler) LoadData(rosenTss _interface.RosenTss) (*tss.PartyID, error) {
-	data, pID, err := rosenTss.GetStorage().LoadEDDSAKeygen(rosenTss.GetPeerHome())
-	if err != nil {
-		logging.Error(err)
-		return nil, err
-	}
-	if pID == nil {
-		logging.Error("pID is nil")
-		return nil, fmt.Errorf("pID is nil")
-	}
-	h.savedData = data.KeygenData
-	pID.Moniker = fmt.Sprintf("tssPeer/%s", rosenTss.GetP2pId())
-	pID.Id = rosenTss.GetP2pId()
-	err = rosenTss.SetMetaData(data.MetaData)
-	if err != nil {
-		return nil, err
-	}
-	return pID, nil
-}
-
-//	- returns key_list and shared_ID of peer stored in the struct
-func (h *handler) GetData() ([]*big.Int, *big.Int) {
-	return h.savedData.Ks, h.savedData.ShareID
 }

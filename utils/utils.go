@@ -3,6 +3,8 @@ package utils
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/btcsuite/btcutil/base58"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -36,6 +38,11 @@ func GetAbsoluteAddress(address string) (string, error) {
 	return absAddress, nil
 }
 
+// GetPKFromEDDSAPub returns the public key Serialized from an EDDSA public key.
+func GetPKFromEDDSAPub(x *big.Int, y *big.Int) []byte {
+	return edwards.NewPublicKey(x, y).Serialize()
+}
+
 //	reads in config file and ENV variables if set.
 func InitConfig(configFile string) (models.Config, error) {
 	// Search config in home directory with name "default" (without extension).
@@ -65,10 +72,26 @@ func IndexOf(collection []*big.Int, el *big.Int) int {
 	return -1
 }
 
-func Decoder(message string) ([]byte, error) {
+//	setups files and creates them
+func SetupDir(address string) (string, error) {
+	absAddress, err := GetAbsoluteAddress(address)
+	if err != nil {
+		return "", err
+	}
+	if err := os.MkdirAll(absAddress, os.ModePerm); err != nil {
+		return "", err
+	}
+	return absAddress, nil
+}
+
+func HexDecoder(message string) ([]byte, error) {
 	return hex.DecodeString(message)
 }
 
-func Encoder(message []byte) string {
+func HexEncoder(message []byte) string {
 	return hex.EncodeToString(message)
+}
+
+func Base58Decoder(text string) []byte {
+	return base58.Decode(text)
 }

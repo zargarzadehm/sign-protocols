@@ -38,16 +38,17 @@ func main() {
 		panic(err)
 	}
 
-	absAddress, err := utils.GetAbsoluteAddress(config.HomeAddress)
+	absLogAddress, err := utils.SetupDir(config.LogAddress)
 	if err != nil {
 		panic(err)
 	}
-	logFile := fmt.Sprintf("%s/%s", absAddress, "tss.log")
 
+	logFile := fmt.Sprintf("%s/%s", absLogAddress, "tss.log")
 	err = logger.Init(logFile, config, false)
 	if err != nil {
 		panic(err)
 	}
+
 	logging := logger.NewSugar("main")
 
 	defer func() {

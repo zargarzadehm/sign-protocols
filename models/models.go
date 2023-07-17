@@ -6,11 +6,21 @@ import (
 )
 
 const (
+	KeygenFileExistError     = "keygen file exists"
 	DuplicatedMessageIdError = "duplicated messageId"
 	OperationIsRunningError  = "operation is running"
 	NoKeygenDataFoundError   = "no keygen data found"
+	WrongOperationError      = "wrong operation"
 	WrongCryptoProtocolError = "wrong crypto protocol"
 )
+
+type KeygenMessage struct {
+	PeersCount  int      `json:"peersCount"`
+	Threshold   int      `json:"threshold"`
+	Crypto      string   `json:"crypto"`
+	CallBackUrl string   `json:"callBackUrl"`
+	P2PIDs      []string `json:"p2pIDs"`
+}
 
 type SignMessage struct {
 	Crypto      string `json:"crypto"`
@@ -31,6 +41,17 @@ type SignData struct {
 	Error     string `json:"error"`
 }
 
+type KeygenData struct {
+	ShareID string `json:"shareID"`
+	PubKey  string `json:"pubKey"`
+	Status  string `json:"status"`
+}
+
+type FailKeygenData struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}
+
 type Message struct {
 	Message string `json:"message"`
 	Sender  string `json:"sender"`
@@ -42,7 +63,6 @@ type GossipMessage struct {
 	Message    string `json:"message"`
 	SenderId   string `json:"senderId"`
 	ReceiverId string `json:"receiverId"`
-	Index      int    `json:"index"`
 }
 
 type MetaData struct {
@@ -73,6 +93,7 @@ type PartyMessage struct {
 
 type Config struct {
 	HomeAddress                string  `mapstructure:"HOME_ADDRESS"`
+	LogAddress                 string  `mapstructure:"LOG_ADDRESS"`
 	LogLevel                   string  `mapstructure:"LOG_LEVEL"`
 	LogMaxSize                 int     `mapstructure:"LOG_MAX_SIZE"`
 	LogMaxBackups              int     `mapstructure:"LOG_MAX_BACKUPS"`
