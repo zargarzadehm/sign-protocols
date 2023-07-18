@@ -247,10 +247,10 @@ func (s *operationEDDSAKeygen) HandleEndMessage(rosenTss _interface.RosenTss, ke
 
 	public := utils.GetPKFromEDDSAPub(pk.X, pk.Y)
 	encodedPK := hex.EncodeToString(public)
-	shareIDStr := keygenData.ShareID.String()
+	shareIdStr := keygenData.ShareID.String()
 
 	keygenResponse := models.KeygenData{
-		ShareID: shareIDStr,
+		ShareID: shareIdStr,
 		PubKey:  encodedPK,
 		Status:  "success",
 	}
@@ -260,7 +260,7 @@ func (s *operationEDDSAKeygen) HandleEndMessage(rosenTss _interface.RosenTss, ke
 	}
 
 	s.Logger.Infof("hex pubKey: %v", encodedPK)
-	s.Logger.Infof("keygen process for ShareId: {%s} and Crypto: {%s} finished.", shareIDStr, s.KeygenMessage.Crypto)
+	s.Logger.Infof("keygen process for ShareId: {%s} and Crypto: {%s} finished.", shareIdStr, s.KeygenMessage.Crypto)
 
 	err := rosenTss.GetStorage().WriteData(tssConfigEDDSA, rosenTss.GetPeerHome(), keygen.KeygenFileName, "eddsa")
 	if err != nil {

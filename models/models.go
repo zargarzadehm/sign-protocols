@@ -42,7 +42,7 @@ type SignData struct {
 }
 
 type KeygenData struct {
-	ShareID string `json:"shareID"`
+	ShareID string `json:"shareId"`
 	PubKey  string `json:"pubKey"`
 	Status  string `json:"status"`
 }
