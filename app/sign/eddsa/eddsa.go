@@ -42,9 +42,9 @@ func (s *operationEDDSASign) Init(rosenTss _interface.RosenTss, peers []models.P
 
 	var unsortedPeers []*tss.PartyID
 	for _, peer := range peers {
-		moniker := fmt.Sprintf("tssPeer/%s", peer.P2PId)
-		shareId, _ := new(big.Int).SetString(peer.ShareId, 10)
-		unsortedPeers = append(unsortedPeers, tss.NewPartyID(peer.P2PId, moniker, shareId))
+		moniker := fmt.Sprintf("tssPeer/%s", peer.P2PID)
+		shareID, _ := new(big.Int).SetString(peer.ShareID, 10)
+		unsortedPeers = append(unsortedPeers, tss.NewPartyID(peer.P2PID, moniker, shareID))
 	}
 
 	signPIDs := tss.SortPartyIDs(unsortedPeers)
