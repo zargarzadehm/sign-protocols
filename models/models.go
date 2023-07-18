@@ -30,8 +30,8 @@ type SignMessage struct {
 }
 
 type Peer struct {
-	ShareId string `json:"shareId"`
-	P2PId   string `json:"p2pId"`
+	ShareID string `json:"shareID"`
+	P2PID   string `json:"p2pID"`
 }
 
 type SignData struct {

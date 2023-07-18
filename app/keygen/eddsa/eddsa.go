@@ -47,8 +47,8 @@ func (s *operationEDDSAKeygen) Init(rosenTss _interface.RosenTss, peers []string
 	if s.LocalTssData.PartyID == nil {
 		for _, peer := range peers {
 			moniker := fmt.Sprintf("tssPeer/%s", peer)
-			shareId := new(big.Int).SetBytes(utils.Base58Decoder(peer))
-			newPartyID := tss.NewPartyID(peer, moniker, shareId)
+			shareID := new(big.Int).SetBytes(utils.Base58Decoder(peer))
+			newPartyID := tss.NewPartyID(peer, moniker, shareID)
 			unsortedPeers = append(unsortedPeers, newPartyID)
 			if peer == selfP2PID {
 				s.LocalTssData.PartyID = newPartyID
@@ -260,7 +260,7 @@ func (s *operationEDDSAKeygen) HandleEndMessage(rosenTss _interface.RosenTss, ke
 	}
 
 	s.Logger.Infof("hex pubKey: %v", encodedPK)
-	s.Logger.Infof("keygen process for ShareId: {%s} and Crypto: {%s} finished.", shareIDStr, s.KeygenMessage.Crypto)
+	s.Logger.Infof("keygen process for ShareID: {%s} and Crypto: {%s} finished.", shareIDStr, s.KeygenMessage.Crypto)
 
 	err := rosenTss.GetStorage().WriteData(tssConfigEDDSA, rosenTss.GetPeerHome(), keygen.KeygenFileName, "eddsa")
 	if err != nil {
