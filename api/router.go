@@ -15,6 +15,7 @@ func InitRouting(e *echo.Echo, tssController TssController) {
 	e.Use(echozap.ZapLogger(zapLogger))
 	e.Use(middleware.Recover())
 
+	e.GET("/threshold", tssController.Threshold())
 	e.POST("/sign", tssController.Sign())
 	e.POST("/keygen", tssController.Keygen())
 	e.POST("/message", tssController.Message())
