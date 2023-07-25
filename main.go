@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"rosen-bridge/tss-api/models"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -58,7 +59,7 @@ func main() {
 		}
 	}()
 
-	logging.Infof("config: %+v", config)
+	logging.Debugf("config: %+v", config)
 	// creating new instance of echo framework
 	e := echo.New()
 	// initiating and reading configs
@@ -72,6 +73,16 @@ func main() {
 	err = tss.SetPeerHome(config.HomeAddress)
 	if err != nil {
 		logging.Fatal(err)
+	}
+
+	// setting up meta data if exist
+	data, _, err := tss.GetStorage().LoadEDDSAKeygen(tss.GetPeerHome())
+	if err != nil {
+		logging.Warn(models.NoKeygenDataFoundError)
+	}
+	err = tss.SetMetaData(data.MetaData)
+	if err != nil {
+		logging.Warn(models.NoMetaDataFoundError)
 	}
 
 	// subscribe to p2p
