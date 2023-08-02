@@ -12,6 +12,7 @@ import (
 
 //	Interface of an app controller
 type TssController interface {
+	Threshold() echo.HandlerFunc
 	Sign() echo.HandlerFunc
 	Keygen() echo.HandlerFunc
 	Message() echo.HandlerFunc
@@ -157,5 +158,17 @@ func (tssController *tssController) Message() echo.HandlerFunc {
 				Message: "ok",
 			},
 		)
+	}
+}
+
+//	returns echo handler, get threshold of meta data
+func (tssController *tssController) Threshold() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		meta := tssController.rosenTss.GetMetaData()
+		if meta == (models.MetaData{}) {
+			return echo.NewHTTPError(http.StatusBadRequest, models.NoMetaDataFoundError)
+		}
+		res := map[string]int{"threshold": meta.Threshold}
+		return c.JSON(http.StatusOK, res)
 	}
 }

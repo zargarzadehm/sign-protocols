@@ -10,6 +10,7 @@ const (
 	DuplicatedMessageIdError = "duplicated messageId"
 	OperationIsRunningError  = "operation is running"
 	NoKeygenDataFoundError   = "no keygen data found"
+	NoMetaDataFoundError     = "no meta data found"
 	WrongOperationError      = "wrong operation"
 	WrongCryptoProtocolError = "wrong crypto protocol"
 )
@@ -104,7 +105,7 @@ type Config struct {
 	LeastProcessRemainingTime  int64   `mapstructure:"LEAST_PROCESS_REMAINING_TIME"`
 	SetupBroadcastInterval     int64   `mapstructure:"SETUP_BROADCAST_INTERVAL"`
 	SignStartTimeTracker       float64 `mapstructure:"SIGN_START_TIME_TRACKER"`
-	TurnDuration               int64   `mapstructure:"TRUN_DURATION"`
+	TurnDuration               int64   `mapstructure:"TURN_DURATION"`
 	WaitInPartyMessageHandling int64   `mapstructure:"WAIT_IN_PARTY_MESSAGE_HANDLING"`
 }
 

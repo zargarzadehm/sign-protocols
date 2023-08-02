@@ -28,7 +28,7 @@ jobs:
       - name: Run build
         run: |
           go version
-          go build -trimpath -o bin/rosenTss-${{ github.ref_name }}
+          CGO_ENABLED=0 go build -trimpath -o bin/rosenTss-${{ github.ref_name }}
 
 
       - name: Upload Binary File
