@@ -40,7 +40,7 @@ build:
     paths:
       - $CI_PROJECT_DIR/.go
   script:
-    - go build -trimpath -o bin/rosenTss
+    - CGO_ENABLED=0 go build -trimpath -o bin/rosenTss
   artifacts:
     paths:
       - bin/
