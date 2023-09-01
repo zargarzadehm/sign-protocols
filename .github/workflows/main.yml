@@ -5,13 +5,23 @@ on:
     types: [published]
 
 jobs:
-  linux-build:
-    name: Linux Build
+  build:
+    name: Build tss-api
     permissions: write-all
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [macos-latest, ubuntu-latest, windows-latest]
         go: [1.18.0]
+        include:
+          - os: macos-latest
+            platform: macOS
+          - os: ubuntu-latest
+            platform: linux
+          - os: windows-latest
+            platform: windows
+    defaults:
+      run:
+        shell: bash
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -28,7 +38,7 @@ jobs:
       - name: Run build
         run: |
           go version
-          CGO_ENABLED=0 go build -trimpath -o bin/rosenTss-${{ github.ref_name }}
+          CGO_ENABLED=0 go build -trimpath -o bin/rosenTss-${{ matrix.platform }}-${{ github.ref_name }}
 
 
       - name: Upload Binary File
