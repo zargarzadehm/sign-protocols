@@ -209,21 +209,16 @@ func (r *rosenTss) MessageHandler(message models.Message) error {
 
 	// wait for not found channels
 	go func() {
-		var state bool
 		for i, start := 0, time.Now(); ; i++ {
 			if time.Since(start) > time.Second*time.Duration(r.Config.MessageTimeout) {
-				state = false
+				logging.Warnf("message timeout, channel not found: %+v", gossipMsg.MessageId)
 				break
 			}
 			if _, ok := r.ChannelMap[gossipMsg.MessageId]; ok {
 				send(r.ChannelMap[gossipMsg.MessageId], gossipMsg)
-				state = true
 				break
 			}
 			time.Sleep(time.Millisecond * time.Duration(r.Config.WriteMsgRetryTime))
-		}
-		if !state {
-			logging.Warnf("message timeout, channel not found: %+v", gossipMsg.MessageId)
 		}
 	}()
 	return nil
