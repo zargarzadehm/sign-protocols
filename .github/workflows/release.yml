@@ -39,11 +39,18 @@ jobs:
         run: |
           go version
           CGO_ENABLED=0 go build -trimpath -o bin/rosenTss-${{ matrix.platform }}-${{ github.ref_name }}
+          mkdir conf
+          mv conf.env.sample conf/conf.env
 
+      - name: Prepare Release File
+        uses: vimtor/action-zip@v1
+        with:
+          files: conf/ ./bin/rosenTss-${{ matrix.platform }}-${{ github.ref_name }}
+          dest: rosenTss-${{ matrix.platform }}-${{ github.ref_name }}.zip
 
-      - name: Upload Binary File
+      - name: Upload Release File
         uses: softprops/action-gh-release@v1
         with:
-          files: ./bin/rosenTss-*
+          files: ./rosenTss*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

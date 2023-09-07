@@ -93,20 +93,20 @@ type PartyMessage struct {
 }
 
 type Config struct {
-	HomeAddress                string  `mapstructure:"HOME_ADDRESS"`
-	LogAddress                 string  `mapstructure:"LOG_ADDRESS"`
-	LogLevel                   string  `mapstructure:"LOG_LEVEL"`
-	LogMaxSize                 int     `mapstructure:"LOG_MAX_SIZE"`
-	LogMaxBackups              int     `mapstructure:"LOG_MAX_BACKUPS"`
-	LogMaxAge                  int     `mapstructure:"LOG_MAX_AGE"`
-	OperationTimeout           int     `mapstructure:"OPERATION_TIMEOUT"`
-	MessageTimeout             int     `mapstructure:"MESSAGE_TIMEOUT"`
-	WriteMsgRetryTime          int     `mapstructure:"WRITE_MSG_RETRY_TIME"`
-	LeastProcessRemainingTime  int64   `mapstructure:"LEAST_PROCESS_REMAINING_TIME"`
-	SetupBroadcastInterval     int64   `mapstructure:"SETUP_BROADCAST_INTERVAL"`
-	SignStartTimeTracker       float64 `mapstructure:"SIGN_START_TIME_TRACKER"`
-	TurnDuration               int64   `mapstructure:"TURN_DURATION"`
-	WaitInPartyMessageHandling int64   `mapstructure:"WAIT_IN_PARTY_MESSAGE_HANDLING"`
+	HomeAddress                string  `mapstructure:"TSS_HOME_ADDRESS"`
+	LogAddress                 string  `mapstructure:"TSS_LOG_ADDRESS"`
+	LogLevel                   string  `mapstructure:"TSS_LOG_LEVEL"`
+	LogMaxSize                 int     `mapstructure:"TSS_LOG_MAX_SIZE"`
+	LogMaxBackups              int     `mapstructure:"TSS_LOG_MAX_BACKUPS"`
+	LogMaxAge                  int     `mapstructure:"TSS_LOG_MAX_AGE"`
+	OperationTimeout           int     `mapstructure:"TSS_OPERATION_TIMEOUT"`
+	MessageTimeout             int     `mapstructure:"TSS_MESSAGE_TIMEOUT"`
+	WriteMsgRetryTime          int     `mapstructure:"TSS_WRITE_MSG_RETRY_TIME"`
+	LeastProcessRemainingTime  int64   `mapstructure:"TSS_LEAST_PROCESS_REMAINING_TIME"`
+	SetupBroadcastInterval     int64   `mapstructure:"TSS_SETUP_BROADCAST_INTERVAL"`
+	SignStartTimeTracker       float64 `mapstructure:"TSS_SIGN_START_TIME_TRACKER"`
+	TurnDuration               int64   `mapstructure:"TSS_TURN_DURATION"`
+	WaitInPartyMessageHandling int64   `mapstructure:"TSS_WAIT_IN_PARTY_MESSAGE_HANDLING"`
 }
 
 type Payload struct {
