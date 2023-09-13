@@ -16,18 +16,20 @@ const (
 )
 
 type KeygenMessage struct {
-	PeersCount  int      `json:"peersCount"`
-	Threshold   int      `json:"threshold"`
-	Crypto      string   `json:"crypto"`
-	CallBackUrl string   `json:"callBackUrl"`
-	P2PIDs      []string `json:"p2pIDs"`
+	PeersCount       int      `json:"peersCount"`
+	Threshold        int      `json:"threshold"`
+	Crypto           string   `json:"crypto"`
+	CallBackUrl      string   `json:"callBackUrl"`
+	P2PIDs           []string `json:"p2pIDs"`
+	OperationTimeout int      `json:"operationTimeout"`
 }
 
 type SignMessage struct {
-	Crypto      string `json:"crypto"`
-	Message     string `json:"message"`
-	CallBackUrl string `json:"callBackUrl"`
-	Peers       []Peer `json:"peers"`
+	Crypto           string `json:"crypto"`
+	Message          string `json:"message"`
+	CallBackUrl      string `json:"callBackUrl"`
+	Peers            []Peer `json:"peers"`
+	OperationTimeout int    `json:"operationTimeout"`
 }
 
 type Peer struct {
@@ -99,7 +101,6 @@ type Config struct {
 	LogMaxSize                 int     `mapstructure:"TSS_LOG_MAX_SIZE"`
 	LogMaxBackups              int     `mapstructure:"TSS_LOG_MAX_BACKUPS"`
 	LogMaxAge                  int     `mapstructure:"TSS_LOG_MAX_AGE"`
-	OperationTimeout           int     `mapstructure:"TSS_OPERATION_TIMEOUT"`
 	MessageTimeout             int     `mapstructure:"TSS_MESSAGE_TIMEOUT"`
 	WriteMsgRetryTime          int     `mapstructure:"TSS_WRITE_MSG_RETRY_TIME"`
 	LeastProcessRemainingTime  int64   `mapstructure:"TSS_LEAST_PROCESS_REMAINING_TIME"`
