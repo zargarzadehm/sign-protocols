@@ -54,9 +54,9 @@ func (r *rosenTss) errorCallBackCall(data interface{}, callBackUrl string) {
 	}
 }
 
-func (r *rosenTss) timeOutGoRoutine(operationName string, messageId string, errorCh chan error) {
+func (r *rosenTss) timeOutGoRoutine(operationName string, operationTimeout int, messageId string, errorCh chan error) {
 	go func() {
-		timeout := time.After(time.Second * time.Duration(r.Config.OperationTimeout))
+		timeout := time.After(time.Second * time.Duration(operationTimeout))
 		for {
 			select {
 			case <-timeout:
@@ -102,7 +102,7 @@ func (r *rosenTss) StartNewKeygen(keygenMessage models.KeygenMessage) error {
 	r.KeygenOperationMap[channelId] = operation
 
 	errorCh := make(chan error)
-	r.timeOutGoRoutine(operation.GetClassName(), messageId, errorCh)
+	r.timeOutGoRoutine(operation.GetClassName(), keygenMessage.OperationTimeout, messageId, errorCh)
 
 	err := operation.Init(r, keygenMessage.P2PIDs)
 	if err != nil {
@@ -158,7 +158,7 @@ func (r *rosenTss) StartNewSign(signMessage models.SignMessage) error {
 	r.SignOperationMap[channelId] = operation
 
 	errorCh := make(chan error)
-	r.timeOutGoRoutine(operation.GetClassName(), messageId, errorCh)
+	r.timeOutGoRoutine(operation.GetClassName(), signMessage.OperationTimeout, messageId, errorCh)
 
 	err := operation.Init(r, signMessage.Peers)
 	if err != nil {
