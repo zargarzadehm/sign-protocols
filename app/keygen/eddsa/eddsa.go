@@ -4,8 +4,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	eddsaKeygen "github.com/bnb-chain/tss-lib/eddsa/keygen"
-	"github.com/bnb-chain/tss-lib/tss"
+	eddsaKeygen "github.com/bnb-chain/tss-lib/v2/eddsa/keygen"
+	"github.com/bnb-chain/tss-lib/v2/tss"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"go.uber.org/zap"
 	"math/big"
@@ -21,9 +21,7 @@ type operationEDDSAKeygen struct {
 	keygen.StructKeygen
 }
 
-type handler struct {
-	savedData eddsaKeygen.LocalPartySaveData
-}
+type handler struct{}
 
 var logging *zap.SugaredLogger
 var eddsaHandler handler
@@ -71,7 +69,7 @@ func (s *operationEDDSAKeygen) CreateParty(rosenTss _interface.RosenTss, statusC
 	s.Logger.Info("creating and starting party")
 
 	outCh := make(chan tss.Message, len(s.LocalTssData.PartyIds))
-	endCh := make(chan eddsaKeygen.LocalPartySaveData, len(s.LocalTssData.PartyIds))
+	endCh := make(chan *eddsaKeygen.LocalPartySaveData, len(s.LocalTssData.PartyIds))
 
 	threshold := rosenTss.GetMetaData().Threshold
 
@@ -278,7 +276,7 @@ func (s *operationEDDSAKeygen) HandleEndMessage(rosenTss _interface.RosenTss, ke
 //	- handles all party messages on outCh and endCh
 //	- listens to channels and send the message to the right function
 func (s *operationEDDSAKeygen) GossipMessageHandler(
-	rosenTss _interface.RosenTss, outCh chan tss.Message, endCh chan eddsaKeygen.LocalPartySaveData,
+	rosenTss _interface.RosenTss, outCh chan tss.Message, endCh chan *eddsaKeygen.LocalPartySaveData,
 ) (bool, error) {
 	for {
 		select {
@@ -288,7 +286,7 @@ func (s *operationEDDSAKeygen) GossipMessageHandler(
 				return false, err
 			}
 		case save := <-endCh:
-			err := s.HandleEndMessage(rosenTss, &save)
+			err := s.HandleEndMessage(rosenTss, save)
 			if err != nil {
 				return false, err
 			}
@@ -302,7 +300,7 @@ func (h *handler) StartParty(
 	localTssData *models.TssData,
 	threshold int,
 	outCh chan tss.Message,
-	endCh chan eddsaKeygen.LocalPartySaveData,
+	endCh chan *eddsaKeygen.LocalPartySaveData,
 ) error {
 	if localTssData.Party == nil {
 		ctx := tss.NewPeerContext(localTssData.PartyIds)

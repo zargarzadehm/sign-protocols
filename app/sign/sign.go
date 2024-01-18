@@ -2,8 +2,8 @@ package sign
 
 import (
 	"fmt"
-	"github.com/bnb-chain/tss-lib/common"
-	"github.com/bnb-chain/tss-lib/tss"
+	"github.com/bnb-chain/tss-lib/v2/common"
+	"github.com/bnb-chain/tss-lib/v2/tss"
 	"go.uber.org/zap"
 	"math/big"
 	_interface "rosen-bridge/tss-api/app/interface"
@@ -16,9 +16,9 @@ type Handler interface {
 	StartParty(
 		localTssData *models.TssData,
 		threshold int,
-		signData *big.Int,
+		signData []byte,
 		outCh chan tss.Message,
-		endCh chan common.SignatureData,
+		endCh chan *common.SignatureData,
 	) error
 }
 

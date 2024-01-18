@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"os"
 	keygen "rosen-bridge/tss-api/app/keygen/eddsa"
 	"time"
@@ -131,8 +130,7 @@ func (r *rosenTss) StartNewKeygen(keygenMessage models.KeygenMessage) error {
 func (r *rosenTss) StartNewSign(signMessage models.SignMessage) error {
 	logging.Info("Starting New Sign process")
 	msgBytes, _ := utils.HexDecoder(signMessage.Message)
-	signData := new(big.Int).SetBytes(msgBytes)
-	signDataBytes := blake2b.Sum256(signData.Bytes())
+	signDataBytes := blake2b.Sum256(msgBytes)
 	signDataHash := utils.HexEncoder(signDataBytes[:])
 	logging.Infof("encoded sign data: %v", signDataHash)
 

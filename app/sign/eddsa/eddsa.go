@@ -3,10 +3,10 @@ package eddsa
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bnb-chain/tss-lib/common"
-	eddsaKeygen "github.com/bnb-chain/tss-lib/eddsa/keygen"
-	eddsaSigning "github.com/bnb-chain/tss-lib/eddsa/signing"
-	"github.com/bnb-chain/tss-lib/tss"
+	"github.com/bnb-chain/tss-lib/v2/common"
+	eddsaKeygen "github.com/bnb-chain/tss-lib/v2/eddsa/keygen"
+	eddsaSigning "github.com/bnb-chain/tss-lib/v2/eddsa/signing"
+	"github.com/bnb-chain/tss-lib/v2/tss"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/blake2b"
 	"math/big"
@@ -63,14 +63,13 @@ func (s *operationEDDSASign) Init(rosenTss _interface.RosenTss, peers []models.P
 func (s *operationEDDSASign) CreateParty(rosenTss _interface.RosenTss, statusCh chan bool, errorCh chan error) {
 	s.Logger.Info("creating and starting party")
 	msgBytes, _ := utils.HexDecoder(s.SignMessage.Message)
-	signData := new(big.Int).SetBytes(msgBytes)
 
 	outCh := make(chan tss.Message, len(s.LocalTssData.PartyIds))
-	endCh := make(chan common.SignatureData, len(s.LocalTssData.PartyIds))
+	endCh := make(chan *common.SignatureData, len(s.LocalTssData.PartyIds))
 
 	threshold := rosenTss.GetMetaData().Threshold
 
-	err := s.StartParty(&s.LocalTssData, threshold, signData, outCh, endCh)
+	err := s.StartParty(&s.LocalTssData, threshold, msgBytes, outCh, endCh)
 	if err != nil {
 		s.Logger.Errorf("there was an error in starting party: %+v", err)
 		errorCh <- err
@@ -214,8 +213,7 @@ func (s *operationEDDSASign) HandleOutMessage(rosenTss _interface.RosenTss, part
 	}
 
 	msgBytes, _ := utils.HexDecoder(s.SignMessage.Message)
-	signData := new(big.Int).SetBytes(msgBytes)
-	messageBytes := blake2b.Sum256(signData.Bytes())
+	messageBytes := blake2b.Sum256(msgBytes)
 	messageId := fmt.Sprintf("%s%s", s.SignMessage.Crypto, utils.HexEncoder(messageBytes[:]))
 	payload := models.Payload{
 		Message:   msgHex,
@@ -262,7 +260,7 @@ func (s *operationEDDSASign) HandleEndMessage(rosenTss _interface.RosenTss, sign
 //	- handles all party messages on outCh and endCh
 //	- listens to channels and send the message to the right function
 func (s *operationEDDSASign) GossipMessageHandler(
-	rosenTss _interface.RosenTss, outCh chan tss.Message, endCh chan common.SignatureData,
+	rosenTss _interface.RosenTss, outCh chan tss.Message, endCh chan *common.SignatureData,
 ) (bool, error) {
 	for {
 		select {
@@ -272,7 +270,7 @@ func (s *operationEDDSASign) GossipMessageHandler(
 				return false, err
 			}
 		case save := <-endCh:
-			err := s.HandleEndMessage(rosenTss, &save)
+			err := s.HandleEndMessage(rosenTss, save)
 			if err != nil {
 				return false, err
 			}
@@ -285,22 +283,22 @@ func (s *operationEDDSASign) GossipMessageHandler(
 func (h *handler) StartParty(
 	localTssData *models.TssData,
 	threshold int,
-	signData *big.Int,
+	signData []byte,
 	outCh chan tss.Message,
-	endCh chan common.SignatureData,
+	endCh chan *common.SignatureData,
 ) error {
 	if localTssData.Party == nil {
 		ctx := tss.NewPeerContext(localTssData.PartyIds)
 		logging.Info("creating party parameters")
-
 		var localPartyId *tss.PartyID
 		for _, peer := range localTssData.PartyIds {
 			if peer.Id == localTssData.PartyID.Id {
 				localPartyId = peer
 			}
 		}
+		signDataBigInt := new(big.Int).SetBytes(signData)
 		localTssData.Params = tss.NewParameters(tss.Edwards(), ctx, localPartyId, len(localTssData.PartyIds), threshold)
-		localTssData.Party = eddsaSigning.NewLocalParty(signData, localTssData.Params, h.savedData, outCh, endCh)
+		localTssData.Party = eddsaSigning.NewLocalParty(signDataBigInt, localTssData.Params, h.savedData, outCh, endCh, len(signData))
 
 		if err := localTssData.Party.Start(); err != nil {
 			return err

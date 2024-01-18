@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bnb-chain/tss-lib/tss"
+	"github.com/bnb-chain/tss-lib/v2/tss"
 	"github.com/pkg/errors"
 	"github.com/rs/xid"
 	"go.uber.org/zap"
