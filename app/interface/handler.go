@@ -3,7 +3,7 @@ package _interface
 import (
 	"encoding/hex"
 	"encoding/json"
-	"github.com/bnb-chain/tss-lib/tss"
+	"github.com/bnb-chain/tss-lib/v2/tss"
 	"rosen-bridge/tss-api/models"
 )
 

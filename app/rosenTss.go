@@ -3,7 +3,6 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"os"
 	keygen "rosen-bridge/tss-api/app/keygen/eddsa"
 	"time"
@@ -54,9 +53,9 @@ func (r *rosenTss) errorCallBackCall(data interface{}, callBackUrl string) {
 	}
 }
 
-func (r *rosenTss) timeOutGoRoutine(operationName string, messageId string, errorCh chan error) {
+func (r *rosenTss) timeOutGoRoutine(operationName string, operationTimeout int, messageId string, errorCh chan error) {
 	go func() {
-		timeout := time.After(time.Second * time.Duration(r.Config.OperationTimeout))
+		timeout := time.After(time.Second * time.Duration(operationTimeout))
 		for {
 			select {
 			case <-timeout:
@@ -102,7 +101,7 @@ func (r *rosenTss) StartNewKeygen(keygenMessage models.KeygenMessage) error {
 	r.KeygenOperationMap[channelId] = operation
 
 	errorCh := make(chan error)
-	r.timeOutGoRoutine(operation.GetClassName(), messageId, errorCh)
+	r.timeOutGoRoutine(operation.GetClassName(), keygenMessage.OperationTimeout, messageId, errorCh)
 
 	err := operation.Init(r, keygenMessage.P2PIDs)
 	if err != nil {
@@ -131,8 +130,7 @@ func (r *rosenTss) StartNewKeygen(keygenMessage models.KeygenMessage) error {
 func (r *rosenTss) StartNewSign(signMessage models.SignMessage) error {
 	logging.Info("Starting New Sign process")
 	msgBytes, _ := utils.HexDecoder(signMessage.Message)
-	signData := new(big.Int).SetBytes(msgBytes)
-	signDataBytes := blake2b.Sum256(signData.Bytes())
+	signDataBytes := blake2b.Sum256(msgBytes)
 	signDataHash := utils.HexEncoder(signDataBytes[:])
 	logging.Infof("encoded sign data: %v", signDataHash)
 
@@ -158,7 +156,7 @@ func (r *rosenTss) StartNewSign(signMessage models.SignMessage) error {
 	r.SignOperationMap[channelId] = operation
 
 	errorCh := make(chan error)
-	r.timeOutGoRoutine(operation.GetClassName(), messageId, errorCh)
+	r.timeOutGoRoutine(operation.GetClassName(), signMessage.OperationTimeout, messageId, errorCh)
 
 	err := operation.Init(r, signMessage.Peers)
 	if err != nil {
@@ -207,25 +205,21 @@ func (r *rosenTss) MessageHandler(message models.Message) error {
 		c <- t
 	}
 
-	var state bool
-	for i, start := 0, time.Now(); ; i++ {
-		if time.Since(start) > time.Second*time.Duration(r.Config.MessageTimeout) {
-			state = false
-			break
+	// wait for not found channels
+	go func() {
+		for i, start := 0, time.Now(); ; i++ {
+			if time.Since(start) > time.Second*time.Duration(r.Config.MessageTimeout) {
+				logging.Warnf("message timeout, channel not found: %+v", gossipMsg.MessageId)
+				break
+			}
+			if _, ok := r.ChannelMap[gossipMsg.MessageId]; ok {
+				send(r.ChannelMap[gossipMsg.MessageId], gossipMsg)
+				break
+			}
+			time.Sleep(time.Millisecond * time.Duration(r.Config.WriteMsgRetryTime))
 		}
-		if _, ok := r.ChannelMap[gossipMsg.MessageId]; ok {
-			send(r.ChannelMap[gossipMsg.MessageId], gossipMsg)
-			state = true
-			break
-		}
-		time.Sleep(time.Millisecond * time.Duration(r.Config.WriteMsgRetryTime))
-	}
-	if !state {
-		logging.Warnf("message timeout, channel not found: %+v", gossipMsg.MessageId)
-		return nil
-	} else {
-		return nil
-	}
+	}()
+	return nil
 }
 
 //	returns the storage

@@ -2,8 +2,8 @@ package keygen
 
 import (
 	"fmt"
-	eddsaKeygen "github.com/bnb-chain/tss-lib/eddsa/keygen"
-	"github.com/bnb-chain/tss-lib/tss"
+	eddsaKeygen "github.com/bnb-chain/tss-lib/v2/eddsa/keygen"
+	"github.com/bnb-chain/tss-lib/v2/tss"
 	"go.uber.org/zap"
 	_interface "rosen-bridge/tss-api/app/interface"
 	"rosen-bridge/tss-api/models"
@@ -18,7 +18,7 @@ type Handler interface {
 		localTssData *models.TssData,
 		threshold int,
 		outCh chan tss.Message,
-		endCh chan eddsaKeygen.LocalPartySaveData,
+		endCh chan *eddsaKeygen.LocalPartySaveData,
 	) error
 }
 
