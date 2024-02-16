@@ -1,6 +1,7 @@
 package models
 
 import (
+	ecdsaKeygen "github.com/bnb-chain/tss-lib/v2/ecdsa/keygen"
 	eddsaKeygen "github.com/bnb-chain/tss-lib/v2/eddsa/keygen"
 	"github.com/bnb-chain/tss-lib/v2/tss"
 )
@@ -76,6 +77,11 @@ type MetaData struct {
 type TssConfigEDDSA struct {
 	MetaData   MetaData                       `json:"metaData"`
 	KeygenData eddsaKeygen.LocalPartySaveData `json:"keygenData"`
+}
+
+type TssConfigECDSA struct {
+	MetaData   MetaData                       `json:"metaData"`
+	KeygenData ecdsaKeygen.LocalPartySaveData `json:"keygenData"`
 }
 
 type TssData struct {

@@ -20,6 +20,7 @@ type Storage interface {
 	MakefilePath(peerHome string, protocol string)
 	WriteData(data interface{}, peerHome string, fileFormat string, protocol string) error
 	LoadEDDSAKeygen(peerHome string) (models.TssConfigEDDSA, *tss.PartyID, error)
+	LoadECDSAKeygen(peerHome string) (models.TssConfigECDSA, *tss.PartyID, error)
 }
 
 type storage struct {
@@ -120,6 +121,58 @@ func (f *storage) LoadEDDSAKeygen(peerHome string) (models.TssConfigEDDSA, *tss.
 		kbxj.SetCurve(tss.Edwards())
 	}
 	tssConfig.KeygenData.EDDSAPub.SetCurve(tss.Edwards())
+	id := xid.New()
+	pMoniker := fmt.Sprintf("tssPeer/%s", id.String())
+	partyID := tss.NewPartyID(id.String(), pMoniker, tssConfig.KeygenData.ShareID)
+
+	var parties tss.UnSortedPartyIDs
+	parties = append(parties, partyID)
+	sortedPIDs := tss.SortPartyIDs(parties)
+	return tssConfig, sortedPIDs[0], nil
+}
+
+//	Loads the ECDSA keygen data from the file
+func (f *storage) LoadECDSAKeygen(peerHome string) (models.TssConfigECDSA, *tss.PartyID, error) {
+	// locating file
+	var keygenFile string
+
+	f.MakefilePath(peerHome, "ecdsa")
+	files, err := ioutil.ReadDir(f.filePath)
+	if err != nil {
+		return models.TssConfigECDSA{}, nil, err
+	}
+	if len(files) == 0 {
+		return models.TssConfigECDSA{}, nil, errors.New(models.NoKeygenDataFoundError)
+	}
+	for _, File := range files {
+		if strings.Contains(File.Name(), "keygen") {
+			keygenFile = File.Name()
+		}
+	}
+	filePath := filepath.Join(f.filePath, keygenFile)
+	logging.Infof("key file path: %v", filePath)
+
+	// reading file
+	bz, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return models.TssConfigECDSA{}, nil, errors.Wrapf(
+			err,
+			"could not open the file for party in the expected location: %s. run keygen first.", filePath,
+		)
+	}
+	var tssConfig models.TssConfigECDSA
+	if err = json.Unmarshal(bz, &tssConfig); err != nil {
+		return models.TssConfigECDSA{}, nil, errors.Wrapf(
+			err,
+			"could not unmarshal data for party located at: %s", filePath,
+		)
+	}
+
+	//creating data from file
+	for _, kbxj := range tssConfig.KeygenData.BigXj {
+		kbxj.SetCurve(tss.Edwards())
+	}
+	tssConfig.KeygenData.ECDSAPub.SetCurve(tss.EC())
 	id := xid.New()
 	pMoniker := fmt.Sprintf("tssPeer/%s", id.String())
 	partyID := tss.NewPartyID(id.String(), pMoniker, tssConfig.KeygenData.ShareID)

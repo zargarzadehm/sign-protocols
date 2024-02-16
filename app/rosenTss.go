@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	keygen "rosen-bridge/tss-api/app/keygen/eddsa"
+	ecdsaKeygen "rosen-bridge/tss-api/app/keygen/ecdsa"
+	eddsaKeygen "rosen-bridge/tss-api/app/keygen/eddsa"
 	"time"
 
 	"go.uber.org/zap"
@@ -93,7 +94,9 @@ func (r *rosenTss) StartNewKeygen(keygenMessage models.KeygenMessage) error {
 	var operation _interface.KeygenOperation
 	switch keygenMessage.Crypto {
 	case "eddsa":
-		operation = keygen.NewKeygenEDDSAOperation(keygenMessage)
+		operation = eddsaKeygen.NewKeygenEDDSAOperation(keygenMessage)
+	case "ecdsa":
+		operation = ecdsaKeygen.NewKeygenECDSAOperation(keygenMessage)
 	default:
 		return fmt.Errorf(models.WrongCryptoProtocolError)
 	}
