@@ -1,10 +1,10 @@
-package eddsa
+package ecdsa
 
 import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	eddsaKeygen "github.com/bnb-chain/tss-lib/v2/eddsa/keygen"
+	ecdsaKeygen "github.com/bnb-chain/tss-lib/v2/ecdsa/keygen"
 	"github.com/bnb-chain/tss-lib/v2/tss"
 	"go.uber.org/zap"
 	"math/big"
@@ -17,10 +17,11 @@ import (
 )
 
 var logging *zap.SugaredLogger
-var eddsaHandler handler
 
-//	- Initializes the eddsa keygen partyId metaData and peers
-func (s *operationEDDSAKeygen) Init(rosenTss _interface.RosenTss, peers []string) error {
+var ecdsaHandler handler
+
+//	- Initializes the ecdsa keygen partyId metaData and peers
+func (s *operationECDSAKeygen) Init(rosenTss _interface.RosenTss, peers []string) error {
 
 	s.Logger.Info("initiation keygen process")
 
@@ -58,11 +59,11 @@ func (s *operationEDDSAKeygen) Init(rosenTss _interface.RosenTss, peers []string
 //	- creates end and out channel for party,
 //	- calls StartParty function of protocol
 //	- handles end channel and out channel in a go routine
-func (s *operationEDDSAKeygen) CreateParty(rosenTss _interface.RosenTss, statusCh chan bool, errorCh chan error) {
+func (s *operationECDSAKeygen) CreateParty(rosenTss _interface.RosenTss, statusCh chan bool, errorCh chan error) {
 	s.Logger.Info("creating and starting party")
 
 	outCh := make(chan tss.Message, len(s.LocalTssData.PartyIds))
-	endCh := make(chan *eddsaKeygen.LocalPartySaveData, len(s.LocalTssData.PartyIds))
+	endCh := make(chan *ecdsaKeygen.LocalPartySaveData, len(s.LocalTssData.PartyIds))
 
 	threshold := rosenTss.GetMetaData().Threshold
 
@@ -95,7 +96,7 @@ func (s *operationEDDSAKeygen) CreateParty(rosenTss _interface.RosenTss, statusC
 }
 
 //	- reads new gossip messages from channel and handle it by calling related function in a go routine.
-func (s *operationEDDSAKeygen) StartAction(rosenTss _interface.RosenTss, messageCh chan models.GossipMessage, errorCh chan error) error {
+func (s *operationECDSAKeygen) StartAction(rosenTss _interface.RosenTss, messageCh chan models.GossipMessage, errorCh chan error) error {
 
 	partyStarted := false
 	statusCh := make(chan bool)
@@ -156,27 +157,27 @@ func (s *operationEDDSAKeygen) StartAction(rosenTss _interface.RosenTss, message
 	}
 }
 
-//	- create eddsa keygen operation
-func NewKeygenEDDSAOperation(keygenMessage models.KeygenMessage) _interface.KeygenOperation {
-	logging = logger.NewSugar("eddsa-keygen")
-	return &operationEDDSAKeygen{
+//	- create ecdsa keygen operation
+func NewKeygenECDSAOperation(keygenMessage models.KeygenMessage) _interface.KeygenOperation {
+	logging = logger.NewSugar("ecdsa-keygen")
+	return &operationECDSAKeygen{
 		StructKeygen: keygen.StructKeygen{
 			KeygenMessage: keygenMessage,
 			Logger:        logging,
 		},
-		EDDSAHandler: &eddsaHandler,
+		ECDSAHandler: &ecdsaHandler,
 	}
 }
 
 //	- returns the class name
-func (s *operationEDDSAKeygen) GetClassName() string {
-	return "eddsaKeygen"
+func (s *operationECDSAKeygen) GetClassName() string {
+	return "ecdsaKeygen"
 }
 
 //	- handles party messages on out channel
 //	- creates payload from party message
 //	- send it to NewMessage function
-func (s *operationEDDSAKeygen) HandleOutMessage(rosenTss _interface.RosenTss, partyMsg tss.Message) error {
+func (s *operationECDSAKeygen) HandleOutMessage(rosenTss _interface.RosenTss, partyMsg tss.Message) error {
 	msgHex, err := s.KeygenOperationHandler.PartyMessageHandler(partyMsg)
 	if err != nil {
 		s.Logger.Errorf("there was an error in parsing party message to the struct: %+v", err)
@@ -208,11 +209,11 @@ func (s *operationEDDSAKeygen) HandleOutMessage(rosenTss _interface.RosenTss, pa
 
 //	- handles save data (keygen data) on end channel of party
 //	- logs the data and send it to CallBack
-func (s *operationEDDSAKeygen) HandleEndMessage(rosenTss _interface.RosenTss, keygenData *eddsaKeygen.LocalPartySaveData) error {
+func (s *operationECDSAKeygen) HandleEndMessage(rosenTss _interface.RosenTss, keygenData *ecdsaKeygen.LocalPartySaveData) error {
 
-	pkX, pkY := keygenData.EDDSAPub.X(), keygenData.EDDSAPub.Y()
+	pkX, pkY := keygenData.ECDSAPub.X(), keygenData.ECDSAPub.Y()
 
-	public := utils.GetPKFromEDDSAPub(pkX, pkY)
+	public := utils.GetPKFromECDSAPub(pkX, pkY)
 	encodedPK := hex.EncodeToString(public)
 	shareIDStr := keygenData.ShareID.String()
 
@@ -221,7 +222,7 @@ func (s *operationEDDSAKeygen) HandleEndMessage(rosenTss _interface.RosenTss, ke
 		PubKey:  encodedPK,
 		Status:  "success",
 	}
-	tssConfigEDDSA := models.TssConfigEDDSA{
+	tssConfigECDSA := models.TssConfigECDSA{
 		MetaData:   rosenTss.GetMetaData(),
 		KeygenData: *keygenData,
 	}
@@ -229,7 +230,7 @@ func (s *operationEDDSAKeygen) HandleEndMessage(rosenTss _interface.RosenTss, ke
 	s.Logger.Infof("hex pubKey: %v", encodedPK)
 	s.Logger.Infof("keygen process for ShareID: {%s} and Crypto: {%s} finished.", shareIDStr, s.KeygenMessage.Crypto)
 
-	err := rosenTss.GetStorage().WriteData(tssConfigEDDSA, rosenTss.GetPeerHome(), keygen.KeygenFileName, "eddsa")
+	err := rosenTss.GetStorage().WriteData(tssConfigECDSA, rosenTss.GetPeerHome(), keygen.KeygenFileName, "ecdsa")
 	if err != nil {
 		return err
 	}
@@ -244,8 +245,8 @@ func (s *operationEDDSAKeygen) HandleEndMessage(rosenTss _interface.RosenTss, ke
 
 //	- handles all party messages on outCh and endCh
 //	- listens to channels and send the message to the right function
-func (s *operationEDDSAKeygen) GossipMessageHandler(
-	rosenTss _interface.RosenTss, outCh chan tss.Message, endCh chan *eddsaKeygen.LocalPartySaveData,
+func (s *operationECDSAKeygen) GossipMessageHandler(
+	rosenTss _interface.RosenTss, outCh chan tss.Message, endCh chan *ecdsaKeygen.LocalPartySaveData,
 ) (bool, error) {
 	for {
 		select {
@@ -269,7 +270,7 @@ func (h *handler) StartParty(
 	localTssData *models.TssData,
 	threshold int,
 	outCh chan tss.Message,
-	endCh chan *eddsaKeygen.LocalPartySaveData,
+	endCh chan *ecdsaKeygen.LocalPartySaveData,
 ) error {
 	if localTssData.Party == nil {
 		ctx := tss.NewPeerContext(localTssData.PartyIds)
@@ -281,8 +282,8 @@ func (h *handler) StartParty(
 				localPartyId = peer
 			}
 		}
-		localTssData.Params = tss.NewParameters(tss.Edwards(), ctx, localPartyId, len(localTssData.PartyIds), threshold)
-		localTssData.Party = eddsaKeygen.NewLocalParty(localTssData.Params, outCh, endCh)
+		localTssData.Params = tss.NewParameters(tss.S256(), ctx, localPartyId, len(localTssData.PartyIds), threshold)
+		localTssData.Party = ecdsaKeygen.NewLocalParty(localTssData.Params, outCh, endCh)
 
 		if err := localTssData.Party.Start(); err != nil {
 			return err

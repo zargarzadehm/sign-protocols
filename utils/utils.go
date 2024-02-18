@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"crypto/elliptic"
 	"encoding/hex"
 	"fmt"
+	"github.com/bnb-chain/tss-lib/v2/tss"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"math/big"
@@ -41,6 +43,11 @@ func GetAbsoluteAddress(address string) (string, error) {
 // GetPKFromEDDSAPub returns the public key Serialized from an EDDSA public key.
 func GetPKFromEDDSAPub(x *big.Int, y *big.Int) []byte {
 	return edwards.NewPublicKey(x, y).Serialize()
+}
+
+// GetPKFromECDSAPub returns the public key Serialized from an ECDSA public key.
+func GetPKFromECDSAPub(x *big.Int, y *big.Int) []byte {
+	return elliptic.MarshalCompressed(tss.EC(), x, y)
 }
 
 //	reads in config file and ENV variables if set.
