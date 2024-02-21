@@ -28,7 +28,7 @@ func (s *operationEDDSAKeygen) Init(rosenTss _interface.RosenTss, peers []string
 		PeersCount: s.KeygenMessage.PeersCount,
 		Threshold:  s.KeygenMessage.Threshold,
 	}
-	err := rosenTss.SetMetaData(meta)
+	err := rosenTss.SetMetaData(meta, "eddsa")
 	if err != nil {
 		return err
 	}
@@ -64,9 +64,9 @@ func (s *operationEDDSAKeygen) CreateParty(rosenTss _interface.RosenTss, statusC
 	outCh := make(chan tss.Message, len(s.LocalTssData.PartyIds))
 	endCh := make(chan *eddsaKeygen.LocalPartySaveData, len(s.LocalTssData.PartyIds))
 
-	threshold := rosenTss.GetMetaData().Threshold
+	metaData, _ := rosenTss.GetMetaData("eddsa")
 
-	err := s.StartParty(&s.LocalTssData, threshold, outCh, endCh)
+	err := s.StartParty(&s.LocalTssData, metaData.Threshold, outCh, endCh)
 	if err != nil {
 		s.Logger.Errorf("there was an error in starting party: %+v", err)
 		errorCh <- err
@@ -221,8 +221,9 @@ func (s *operationEDDSAKeygen) HandleEndMessage(rosenTss _interface.RosenTss, ke
 		PubKey:  encodedPK,
 		Status:  "success",
 	}
+	eddsaMetaData, _ := rosenTss.GetMetaData("eddsa")
 	tssConfigEDDSA := models.TssConfigEDDSA{
-		MetaData:   rosenTss.GetMetaData(),
+		MetaData:   eddsaMetaData,
 		KeygenData: *keygenData,
 	}
 

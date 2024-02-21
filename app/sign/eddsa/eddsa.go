@@ -67,9 +67,9 @@ func (s *operationEDDSASign) CreateParty(rosenTss _interface.RosenTss, statusCh 
 	outCh := make(chan tss.Message, len(s.LocalTssData.PartyIds))
 	endCh := make(chan *common.SignatureData, len(s.LocalTssData.PartyIds))
 
-	threshold := rosenTss.GetMetaData().Threshold
+	eddsaMetaData, _ := rosenTss.GetMetaData("eddsa")
 
-	err := s.StartParty(&s.LocalTssData, threshold, msgBytes, outCh, endCh)
+	err := s.StartParty(&s.LocalTssData, eddsaMetaData.Threshold, msgBytes, outCh, endCh)
 	if err != nil {
 		s.Logger.Errorf("there was an error in starting party: %+v", err)
 		errorCh <- err
@@ -323,7 +323,7 @@ func (h *handler) LoadData(rosenTss _interface.RosenTss) (*tss.PartyID, error) {
 	h.savedData = data.KeygenData
 	pID.Moniker = fmt.Sprintf("tssPeer/%s", rosenTss.GetP2pId())
 	pID.Id = rosenTss.GetP2pId()
-	err = rosenTss.SetMetaData(data.MetaData)
+	err = rosenTss.SetMetaData(data.MetaData, "eddsa")
 	if err != nil {
 		return nil, err
 	}

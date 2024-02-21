@@ -23,7 +23,8 @@ type rosenTss struct {
 	ChannelMap         map[string]chan models.GossipMessage
 	KeygenOperationMap map[string]_interface.KeygenOperation
 	SignOperationMap   map[string]_interface.SignOperation
-	metaData           models.MetaData
+	eddsaMetaData      models.MetaData
+	ecdsaMetaData      models.MetaData
 	storage            storage.Storage
 	connection         network.Connection
 	Config             models.Config
@@ -40,7 +41,8 @@ func NewRosenTss(connection network.Connection, storage storage.Storage, config 
 		ChannelMap:         make(map[string]chan models.GossipMessage),
 		KeygenOperationMap: make(map[string]_interface.KeygenOperation),
 		SignOperationMap:   make(map[string]_interface.SignOperation),
-		metaData:           models.MetaData{},
+		eddsaMetaData:      models.MetaData{},
+		ecdsaMetaData:      models.MetaData{},
 		storage:            storage,
 		connection:         connection,
 		Config:             config,
@@ -253,14 +255,37 @@ func (r *rosenTss) GetPeerHome() string {
 }
 
 //	setting ups metadata from given file in the home directory
-func (r *rosenTss) SetMetaData(meta models.MetaData) error {
-	r.metaData = meta
-	return nil
+func (r *rosenTss) SetMetaData(meta models.MetaData, crypto string) error {
+	switch crypto {
+	case "eddsa":
+		r.eddsaMetaData = meta
+		return nil
+	case "ecdsa":
+		r.ecdsaMetaData = meta
+		return nil
+	default:
+		return fmt.Errorf(models.WrongCryptoProtocolError)
+	}
 }
 
 //	returns peer's meta data
-func (r *rosenTss) GetMetaData() models.MetaData {
-	return r.metaData
+func (r *rosenTss) GetMetaData(crypto string) (models.MetaData, error) {
+	switch crypto {
+	case "eddsa":
+		if (r.eddsaMetaData != models.MetaData{}) {
+			return r.eddsaMetaData, nil
+		} else {
+			return r.eddsaMetaData, fmt.Errorf(models.EDDSANoMetaDataFoundError)
+		}
+	case "ecdsa":
+		if (r.ecdsaMetaData != models.MetaData{}) {
+			return r.ecdsaMetaData, nil
+		} else {
+			return r.ecdsaMetaData, fmt.Errorf(models.ECDSANoMetaDataFoundError)
+		}
+	default:
+		return models.MetaData{}, fmt.Errorf(models.WrongCryptoProtocolError)
+	}
 }
 
 //	returns list of operations

@@ -7,13 +7,16 @@ import (
 )
 
 const (
-	KeygenFileExistError     = "keygen file exists"
-	DuplicatedMessageIdError = "duplicated messageId"
-	OperationIsRunningError  = "operation is running"
-	NoKeygenDataFoundError   = "no keygen data found"
-	NoMetaDataFoundError     = "no meta data found"
-	WrongOperationError      = "wrong operation"
-	WrongCryptoProtocolError = "wrong crypto protocol"
+	KeygenFileExistError        = "keygen file exists"
+	DuplicatedMessageIdError    = "duplicated messageId"
+	OperationIsRunningError     = "operation is running"
+	EDDSANoKeygenDataFoundError = "no keygen data found for eddsa"
+	ECDSANoKeygenDataFoundError = "no keygen data found for ecdsa"
+	EDDSANoMetaDataFoundError   = "no meta data found for eddsa"
+	ECDSANoMetaDataFoundError   = "no meta data found for ecdsa"
+	InvalidCryptoFoundError     = "invalid crypto algorithm"
+	WrongOperationError         = "wrong operation"
+	WrongCryptoProtocolError    = "wrong crypto protocol"
 )
 
 type KeygenMessage struct {

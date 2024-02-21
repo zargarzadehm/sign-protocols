@@ -29,7 +29,8 @@ func (s *operationECDSAKeygen) Init(rosenTss _interface.RosenTss, peers []string
 		PeersCount: s.KeygenMessage.PeersCount,
 		Threshold:  s.KeygenMessage.Threshold,
 	}
-	err := rosenTss.SetMetaData(meta)
+
+	err := rosenTss.SetMetaData(meta, "ecdsa")
 	if err != nil {
 		return err
 	}
@@ -65,9 +66,9 @@ func (s *operationECDSAKeygen) CreateParty(rosenTss _interface.RosenTss, statusC
 	outCh := make(chan tss.Message, len(s.LocalTssData.PartyIds))
 	endCh := make(chan *ecdsaKeygen.LocalPartySaveData, len(s.LocalTssData.PartyIds))
 
-	threshold := rosenTss.GetMetaData().Threshold
+	ecdsaMetaData, _ := rosenTss.GetMetaData("ecdsa")
 
-	err := s.StartParty(&s.LocalTssData, threshold, outCh, endCh)
+	err := s.StartParty(&s.LocalTssData, ecdsaMetaData.Threshold, outCh, endCh)
 	if err != nil {
 		s.Logger.Errorf("there was an error in starting party: %+v", err)
 		errorCh <- err
@@ -222,8 +223,9 @@ func (s *operationECDSAKeygen) HandleEndMessage(rosenTss _interface.RosenTss, ke
 		PubKey:  encodedPK,
 		Status:  "success",
 	}
+	ecdsaMetaData, _ := rosenTss.GetMetaData("ecdsa")
 	tssConfigECDSA := models.TssConfigECDSA{
-		MetaData:   rosenTss.GetMetaData(),
+		MetaData:   ecdsaMetaData,
 		KeygenData: *keygenData,
 	}
 

@@ -126,7 +126,7 @@ func (tssController *tssController) Sign() echo.HandlerFunc {
 			switch err.Error() {
 			case models.DuplicatedMessageIdError:
 				return echo.NewHTTPError(http.StatusConflict, err.Error())
-			case models.NoKeygenDataFoundError, models.WrongCryptoProtocolError:
+			case models.ECDSANoKeygenDataFoundError, models.EDDSANoKeygenDataFoundError, models.WrongCryptoProtocolError:
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			default:
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
@@ -164,9 +164,14 @@ func (tssController *tssController) Message() echo.HandlerFunc {
 //	returns echo handler, get threshold of meta data
 func (tssController *tssController) Threshold() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		meta := tssController.rosenTss.GetMetaData()
-		if meta == (models.MetaData{}) {
-			return echo.NewHTTPError(http.StatusBadRequest, models.NoMetaDataFoundError)
+		crypto := c.QueryParam("crypto")
+		if crypto == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, models.InvalidCryptoFoundError)
+		}
+
+		meta, err := tssController.rosenTss.GetMetaData(crypto)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 		res := map[string]int{"threshold": meta.Threshold}
 		return c.JSON(http.StatusOK, res)

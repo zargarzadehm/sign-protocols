@@ -90,7 +90,7 @@ func (f *storage) LoadEDDSAKeygen(peerHome string) (models.TssConfigEDDSA, *tss.
 		return models.TssConfigEDDSA{}, nil, err
 	}
 	if len(files) == 0 {
-		return models.TssConfigEDDSA{}, nil, errors.New(models.NoKeygenDataFoundError)
+		return models.TssConfigEDDSA{}, nil, errors.New(models.EDDSANoKeygenDataFoundError)
 	}
 	for _, File := range files {
 		if strings.Contains(File.Name(), "keygen") {
@@ -142,7 +142,7 @@ func (f *storage) LoadECDSAKeygen(peerHome string) (models.TssConfigECDSA, *tss.
 		return models.TssConfigECDSA{}, nil, err
 	}
 	if len(files) == 0 {
-		return models.TssConfigECDSA{}, nil, errors.New(models.NoKeygenDataFoundError)
+		return models.TssConfigECDSA{}, nil, errors.New(models.ECDSANoKeygenDataFoundError)
 	}
 	for _, File := range files {
 		if strings.Contains(File.Name(), "keygen") {
