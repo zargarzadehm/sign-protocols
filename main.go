@@ -75,14 +75,26 @@ func main() {
 		logging.Fatal(err)
 	}
 
-	// setting up meta data if exist
-	data, _, err := tss.GetStorage().LoadEDDSAKeygen(tss.GetPeerHome())
+	// setting up meta data if exist for eddsa
+	eddsaMetaData, _, err := tss.GetStorage().LoadEDDSAKeygen(tss.GetPeerHome())
 	if err != nil {
-		logging.Warn(models.NoKeygenDataFoundError)
+		logging.Warn(models.EDDSANoKeygenDataFoundError)
 	}
-	err = tss.SetMetaData(data.MetaData)
+
+	err = tss.SetMetaData(eddsaMetaData.MetaData, models.EDDSA)
 	if err != nil {
-		logging.Warn(models.NoMetaDataFoundError)
+		logging.Warn(models.EDDSANoMetaDataFoundError)
+	}
+
+	// setting up meta data if exist for ecdsa
+	ecdsaMetaData, _, err := tss.GetStorage().LoadECDSAKeygen(tss.GetPeerHome())
+	if err != nil {
+		logging.Warn(models.ECDSANoKeygenDataFoundError)
+	}
+
+	err = tss.SetMetaData(ecdsaMetaData.MetaData, models.ECDSA)
+	if err != nil {
+		logging.Warn(models.ECDSANoMetaDataFoundError)
 	}
 
 	// subscribe to p2p
