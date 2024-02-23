@@ -95,9 +95,9 @@ func (r *rosenTss) StartNewKeygen(keygenMessage models.KeygenMessage) error {
 
 	var operation _interface.KeygenOperation
 	switch keygenMessage.Crypto {
-	case "eddsa":
+	case models.EDDSA:
 		operation = eddsaKeygen.NewKeygenEDDSAOperation(keygenMessage)
-	case "ecdsa":
+	case models.ECDSA:
 		operation = ecdsaKeygen.NewKeygenECDSAOperation(keygenMessage)
 	default:
 		return fmt.Errorf(models.WrongCryptoProtocolError)
@@ -152,7 +152,7 @@ func (r *rosenTss) StartNewSign(signMessage models.SignMessage) error {
 	var operation _interface.SignOperation
 	println(signMessage.Crypto)
 	switch signMessage.Crypto {
-	case "eddsa":
+	case models.EDDSA:
 		operation = eddsaSign.NewSignEDDSAOperation(signMessage)
 	default:
 		return fmt.Errorf(models.WrongCryptoProtocolError)
@@ -257,10 +257,10 @@ func (r *rosenTss) GetPeerHome() string {
 //	setting ups metadata from given file in the home directory
 func (r *rosenTss) SetMetaData(meta models.MetaData, crypto string) error {
 	switch crypto {
-	case "eddsa":
+	case models.EDDSA:
 		r.eddsaMetaData = meta
 		return nil
-	case "ecdsa":
+	case models.ECDSA:
 		r.ecdsaMetaData = meta
 		return nil
 	default:
@@ -271,13 +271,13 @@ func (r *rosenTss) SetMetaData(meta models.MetaData, crypto string) error {
 //	returns peer's meta data
 func (r *rosenTss) GetMetaData(crypto string) (models.MetaData, error) {
 	switch crypto {
-	case "eddsa":
+	case models.EDDSA:
 		if (r.eddsaMetaData != models.MetaData{}) {
 			return r.eddsaMetaData, nil
 		} else {
 			return r.eddsaMetaData, fmt.Errorf(models.EDDSANoMetaDataFoundError)
 		}
-	case "ecdsa":
+	case models.ECDSA:
 		if (r.ecdsaMetaData != models.MetaData{}) {
 			return r.ecdsaMetaData, nil
 		} else {

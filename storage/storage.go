@@ -84,7 +84,7 @@ func (f *storage) LoadEDDSAKeygen(peerHome string) (models.TssConfigEDDSA, *tss.
 	// locating file
 	var keygenFile string
 
-	f.MakefilePath(peerHome, "eddsa")
+	f.MakefilePath(peerHome, models.EDDSA)
 	files, err := ioutil.ReadDir(f.filePath)
 	if err != nil {
 		return models.TssConfigEDDSA{}, nil, err
@@ -136,7 +136,7 @@ func (f *storage) LoadECDSAKeygen(peerHome string) (models.TssConfigECDSA, *tss.
 	// locating file
 	var keygenFile string
 
-	f.MakefilePath(peerHome, "ecdsa")
+	f.MakefilePath(peerHome, models.ECDSA)
 	files, err := ioutil.ReadDir(f.filePath)
 	if err != nil {
 		return models.TssConfigECDSA{}, nil, err

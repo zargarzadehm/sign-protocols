@@ -6,14 +6,14 @@ import (
 	"rosen-bridge/tss-api/storage"
 )
 
-//	(keygen eddsa protocol)
+//	(keygen protocol)
 type KeygenOperation interface {
 	Init(RosenTss, []string) error
 	StartAction(RosenTss, chan models.GossipMessage, chan error) error
 	GetClassName() string
 }
 
-//	(sign eddsa protocol)
+//	(sign protocol)
 type SignOperation interface {
 	Init(RosenTss, []models.Peer) error
 	StartAction(RosenTss, chan models.GossipMessage, chan error) error

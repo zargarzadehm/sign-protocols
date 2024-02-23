@@ -81,7 +81,7 @@ func main() {
 		logging.Warn(models.EDDSANoKeygenDataFoundError)
 	}
 
-	err = tss.SetMetaData(eddsaMetaData.MetaData, "eddsa")
+	err = tss.SetMetaData(eddsaMetaData.MetaData, models.EDDSA)
 	if err != nil {
 		logging.Warn(models.EDDSANoMetaDataFoundError)
 	}
@@ -92,7 +92,7 @@ func main() {
 		logging.Warn(models.ECDSANoKeygenDataFoundError)
 	}
 
-	err = tss.SetMetaData(ecdsaMetaData.MetaData, "ecdsa")
+	err = tss.SetMetaData(ecdsaMetaData.MetaData, models.ECDSA)
 	if err != nil {
 		logging.Warn(models.ECDSANoMetaDataFoundError)
 	}

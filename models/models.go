@@ -19,6 +19,11 @@ const (
 	WrongCryptoProtocolError    = "wrong crypto protocol"
 )
 
+const (
+	ECDSA = "ecdsa"
+	EDDSA = "eddsa"
+)
+
 type KeygenMessage struct {
 	PeersCount       int      `json:"peersCount"`
 	Threshold        int      `json:"threshold"`
