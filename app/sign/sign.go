@@ -18,21 +18,17 @@ type Handler interface {
 	StartParty(
 		localTssData *models.TssData,
 		threshold int,
-		signData []byte,
+		signMsg models.SignMessage,
 		outCh chan tss.Message,
 		endCh chan *common.SignatureData,
 	) error
 }
 
 type StructSign struct {
-	// TODO: remove redundant objects
 	_interface.SignOperationHandler
-	LocalTssData         models.TssData
-	SignMessage          models.SignMessage
-	Signatures           map[int][]byte
-	Logger               *zap.SugaredLogger
-	SetupSignMessage     models.SetupSign
-	SelfSetupSignMessage models.SetupSign
+	LocalTssData models.TssData
+	SignMessage  models.SignMessage
+	Logger       *zap.SugaredLogger
 	Handler
 }
 

@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/crypto/blake2b"
 	"rosen-bridge/tss-api/app/interface"
+	ecdsaSign "rosen-bridge/tss-api/app/sign/ecdsa"
 	eddsaSign "rosen-bridge/tss-api/app/sign/eddsa"
 	"rosen-bridge/tss-api/logger"
 	"rosen-bridge/tss-api/models"
@@ -154,10 +155,16 @@ func (r *rosenTss) StartNewSign(signMessage models.SignMessage) error {
 	switch signMessage.Crypto {
 	case models.EDDSA:
 		operation = eddsaSign.NewSignEDDSAOperation(signMessage)
+	case models.ECDSA:
+		if len(signMessage.DerivationPath) == 0 {
+			return fmt.Errorf(models.WrongDerivationPathError)
+		}
+		operation = ecdsaSign.NewSignECDSAOperation(signMessage)
 	default:
 		return fmt.Errorf(models.WrongCryptoProtocolError)
 	}
-	channelId := fmt.Sprintf("%s%s", operation.GetClassName(), messageId)
+
+	channelId := fmt.Sprintf("%s%s%s", operation.GetClassName(), signMessage.ChainCode, messageId)
 	r.SignOperationMap[channelId] = operation
 
 	errorCh := make(chan error)
@@ -312,7 +319,7 @@ func (r *rosenTss) deleteInstance(operationType string, messageId string, channe
 func (r *rosenTss) deleteKeygenInstance(messageId string, channelId string, errorCh chan error) {
 	operationName := r.KeygenOperationMap[channelId].GetClassName()
 	logging.Debugf("deleting %s for channelId %s and messageId %s for keygen operation", operationName, channelId, messageId)
-	delete(r.SignOperationMap, channelId)
+	delete(r.KeygenOperationMap, channelId)
 	delete(r.ChannelMap, messageId)
 	close(errorCh)
 	logging.Infof("operation %s removed for channelId %s and messageId %s for keygen operation", operationName, channelId, messageId)

@@ -17,6 +17,7 @@ const (
 	InvalidCryptoFoundError     = "invalid crypto algorithm"
 	WrongOperationError         = "wrong operation"
 	WrongCryptoProtocolError    = "wrong crypto protocol"
+	WrongDerivationPathError    = "wrong derivation path"
 )
 
 const (
@@ -25,20 +26,22 @@ const (
 )
 
 type KeygenMessage struct {
-	PeersCount       int      `json:"peersCount"`
-	Threshold        int      `json:"threshold"`
-	Crypto           string   `json:"crypto"`
-	CallBackUrl      string   `json:"callBackUrl"`
-	P2PIDs           []string `json:"p2pIDs"`
-	OperationTimeout int      `json:"operationTimeout"`
+	PeersCount       int      `json:"peersCount" validate:"required"`
+	Threshold        int      `json:"threshold" validate:"required"`
+	Crypto           string   `json:"crypto" validate:"required"`
+	CallBackUrl      string   `json:"callBackUrl" validate:"required"`
+	P2PIDs           []string `json:"p2pIDs" validate:"required"`
+	OperationTimeout int      `json:"operationTimeout" validate:"required"`
 }
 
 type SignMessage struct {
-	Crypto           string `json:"crypto"`
-	Message          string `json:"message"`
-	CallBackUrl      string `json:"callBackUrl"`
-	Peers            []Peer `json:"peers"`
-	OperationTimeout int    `json:"operationTimeout"`
+	Crypto           string   `json:"crypto" validate:"required"`
+	Message          string   `json:"message" validate:"required"`
+	CallBackUrl      string   `json:"callBackUrl" validate:"required"`
+	Peers            []Peer   `json:"peers" validate:"required"`
+	OperationTimeout int      `json:"operationTimeout" validate:"required"`
+	ChainCode        string   `json:"chainCode" validate:"required"`
+	DerivationPath   []uint32 `json:"derivationPath"`
 }
 
 type Peer struct {
@@ -128,11 +131,4 @@ type Payload struct {
 	MessageId string `json:"messageId"`
 	Message   string `json:"message"`
 	SenderId  string `json:"senderId"`
-}
-
-type SetupSign struct {
-	Hash      string        `json:"hash"`
-	Peers     []tss.PartyID `json:"peers"`
-	Timestamp int64         `json:"timestamp"`
-	StarterId string        `json:"starterId"`
 }

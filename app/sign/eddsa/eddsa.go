@@ -61,7 +61,6 @@ func (s *operationEDDSASign) Init(rosenTss _interface.RosenTss, peers []models.P
 //	- handles end channel and out channel in a go routine
 func (s *operationEDDSASign) CreateParty(rosenTss _interface.RosenTss, statusCh chan bool, errorCh chan error) {
 	s.Logger.Info("creating and starting party")
-	msgBytes, _ := utils.HexDecoder(s.SignMessage.Message)
 
 	outCh := make(chan tss.Message, len(s.LocalTssData.PartyIds))
 	endCh := make(chan *common.SignatureData, len(s.LocalTssData.PartyIds))
@@ -73,7 +72,7 @@ func (s *operationEDDSASign) CreateParty(rosenTss _interface.RosenTss, statusCh 
 		return
 	}
 
-	err = s.StartParty(&s.LocalTssData, eddsaMetaData.Threshold, msgBytes, outCh, endCh)
+	err = s.StartParty(&s.LocalTssData, eddsaMetaData.Threshold, s.SignMessage, outCh, endCh)
 	if err != nil {
 		s.Logger.Errorf("there was an error in starting party: %+v", err)
 		errorCh <- err
@@ -169,7 +168,6 @@ func NewSignEDDSAOperation(signMessage models.SignMessage) _interface.SignOperat
 	return &operationEDDSASign{
 		StructSign: sign.StructSign{
 			SignMessage: signMessage,
-			Signatures:  make(map[int][]byte),
 			Logger:      logging,
 			Handler:     &eddsaHandler,
 		},
@@ -185,7 +183,7 @@ func (s *operationEDDSASign) GetClassName() string {
 func (h *handler) StartParty(
 	localTssData *models.TssData,
 	threshold int,
-	signData []byte,
+	signMsg models.SignMessage,
 	outCh chan tss.Message,
 	endCh chan *common.SignatureData,
 ) error {
@@ -198,9 +196,10 @@ func (h *handler) StartParty(
 				localPartyId = peer
 			}
 		}
-		signDataBigInt := new(big.Int).SetBytes(signData)
+		msgBytes, _ := utils.HexDecoder(signMsg.Message)
+		signDataBigInt := new(big.Int).SetBytes(msgBytes)
 		localTssData.Params = tss.NewParameters(tss.Edwards(), ctx, localPartyId, len(localTssData.PartyIds), threshold)
-		localTssData.Party = eddsaSigning.NewLocalParty(signDataBigInt, localTssData.Params, h.savedData, outCh, endCh, len(signData))
+		localTssData.Party = eddsaSigning.NewLocalParty(signDataBigInt, localTssData.Params, h.savedData, outCh, endCh, len(msgBytes))
 
 		if err := localTssData.Party.Start(); err != nil {
 			return err

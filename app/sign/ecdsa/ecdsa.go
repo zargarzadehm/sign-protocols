@@ -1,12 +1,17 @@
 package ecdsa
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"encoding/json"
 	"fmt"
 	"github.com/bnb-chain/tss-lib/v2/common"
+	"github.com/bnb-chain/tss-lib/v2/crypto"
+	"github.com/bnb-chain/tss-lib/v2/crypto/ckd"
 	ecdsaKeygen "github.com/bnb-chain/tss-lib/v2/ecdsa/keygen"
 	ecdsaSigning "github.com/bnb-chain/tss-lib/v2/ecdsa/signing"
 	"github.com/bnb-chain/tss-lib/v2/tss"
+	"github.com/btcsuite/btcd/chaincfg"
 	"go.uber.org/zap"
 	"math/big"
 	"rosen-bridge/tss-api/app/interface"
@@ -61,7 +66,6 @@ func (s *operationECDSASign) Init(rosenTss _interface.RosenTss, peers []models.P
 //	- handles end channel and out channel in a go routine
 func (s *operationECDSASign) CreateParty(rosenTss _interface.RosenTss, statusCh chan bool, errorCh chan error) {
 	s.Logger.Info("creating and starting party")
-	msgBytes, _ := utils.HexDecoder(s.SignMessage.Message)
 
 	outCh := make(chan tss.Message, len(s.LocalTssData.PartyIds))
 	endCh := make(chan *common.SignatureData, len(s.LocalTssData.PartyIds))
@@ -73,7 +77,7 @@ func (s *operationECDSASign) CreateParty(rosenTss _interface.RosenTss, statusCh 
 		return
 	}
 
-	err = s.StartParty(&s.LocalTssData, ecdsaMetaData.Threshold, msgBytes, outCh, endCh)
+	err = s.StartParty(&s.LocalTssData, ecdsaMetaData.Threshold, s.SignMessage, outCh, endCh)
 	if err != nil {
 		s.Logger.Errorf("there was an error in starting party: %+v", err)
 		errorCh <- err
@@ -169,7 +173,6 @@ func NewSignECDSAOperation(signMessage models.SignMessage) _interface.SignOperat
 	return &operationECDSASign{
 		StructSign: sign.StructSign{
 			SignMessage: signMessage,
-			Signatures:  make(map[int][]byte),
 			Logger:      logging,
 			Handler:     &ecdsaHandler,
 		},
@@ -185,7 +188,7 @@ func (s *operationECDSASign) GetClassName() string {
 func (h *handler) StartParty(
 	localTssData *models.TssData,
 	threshold int,
-	signData []byte,
+	signMsg models.SignMessage,
 	outCh chan tss.Message,
 	endCh chan *common.SignatureData,
 ) error {
@@ -198,10 +201,25 @@ func (h *handler) StartParty(
 				localPartyId = peer
 			}
 		}
-		signDataBigInt := new(big.Int).SetBytes(signData)
-		localTssData.Params = tss.NewParameters(tss.Edwards(), ctx, localPartyId, len(localTssData.PartyIds), threshold)
-		localTssData.Party = ecdsaSigning.NewLocalParty(signDataBigInt, localTssData.Params, h.savedData, outCh, endCh, len(signData))
 
+		il, extendedChildPk, err := derivingPubkeyFromPath(h.savedData.ECDSAPub, []byte(signMsg.ChainCode), signMsg.DerivationPath, tss.S256())
+
+		if err != nil {
+			return err
+		}
+
+		keyDerivationDelta := il
+		key := []ecdsaKeygen.LocalPartySaveData{h.savedData}
+		err = ecdsaSigning.UpdatePublicKeyAndAdjustBigXj(keyDerivationDelta, key, &extendedChildPk.PublicKey, tss.S256())
+		if err != nil {
+			return err
+		}
+
+		msgBytes, _ := utils.HexDecoder(signMsg.Message)
+		signDataBigInt := new(big.Int).SetBytes(msgBytes)
+		localTssData.Params = tss.NewParameters(tss.S256(), ctx, localPartyId, len(localTssData.PartyIds), threshold)
+
+		localTssData.Party = ecdsaSigning.NewLocalPartyWithKDD(signDataBigInt, localTssData.Params, key[0], keyDerivationDelta, outCh, endCh, len(msgBytes))
 		if err := localTssData.Party.Start(); err != nil {
 			return err
 		}
@@ -235,4 +253,27 @@ func (h *handler) LoadData(rosenTss _interface.RosenTss) (*tss.PartyID, error) {
 //	- returns key_list and shared_ID of peer stored in the struct
 func (h *handler) GetData() ([]*big.Int, *big.Int) {
 	return h.savedData.Ks, h.savedData.ShareID
+}
+
+// - derive on master pubKey according to bip32 (tss-lib modified version)
+// - return new keyDerivationDelta and extendedChildPk
+func derivingPubkeyFromPath(masterPub *crypto.ECPoint, chainCode []byte, path []uint32, ec elliptic.Curve) (*big.Int, *ckd.ExtendedKey, error) {
+	// build ecdsa key pair
+	pk := ecdsa.PublicKey{
+		Curve: ec,
+		X:     masterPub.X(),
+		Y:     masterPub.Y(),
+	}
+
+	net := &chaincfg.MainNetParams
+	extendedParentPk := &ckd.ExtendedKey{
+		PublicKey:  pk,
+		Depth:      0,
+		ChildIndex: 0,
+		ChainCode:  chainCode[:],
+		ParentFP:   []byte{0x00, 0x00, 0x00, 0x00},
+		Version:    net.HDPublicKeyID[:],
+	}
+
+	return ckd.DeriveChildKeyFromHierarchy(path, extendedParentPk, ec.Params().N, ec)
 }

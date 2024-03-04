@@ -105,6 +105,7 @@ func main() {
 
 	// running echo framework
 	tssController := api.NewTssController(tss)
+	e.Validator = tssController
 
 	// get p2pId
 	err = tss.SetP2pId()
