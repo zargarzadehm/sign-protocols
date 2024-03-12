@@ -36,7 +36,7 @@ var ecdsaHandler handler
 //	- Initializes the ecdsa sign partyId and peers
 func (s *operationECDSASign) Init(rosenTss _interface.RosenTss, peers []models.Peer) error {
 
-	s.Logger.Info("initiation signing process")
+	s.Logger.Info("initiation ecdsa signing process")
 
 	pID, err := s.LoadData(rosenTss)
 	if err != nil {
@@ -233,7 +233,6 @@ func (h *handler) StartParty(
 func (h *handler) LoadData(rosenTss _interface.RosenTss) (*tss.PartyID, error) {
 	data, pID, err := rosenTss.GetStorage().LoadECDSAKeygen(rosenTss.GetPeerHome())
 	if err != nil {
-		logging.Error(err)
 		return nil, err
 	}
 	if pID == nil {

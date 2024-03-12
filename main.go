@@ -78,7 +78,7 @@ func main() {
 	// setting up meta data if exist for eddsa
 	eddsaMetaData, _, err := tss.GetStorage().LoadEDDSAKeygen(tss.GetPeerHome())
 	if err != nil {
-		logging.Warn(models.EDDSANoKeygenDataFoundError)
+		logging.Warn(err)
 	}
 
 	err = tss.SetMetaData(eddsaMetaData.MetaData, models.EDDSA)
@@ -89,7 +89,7 @@ func main() {
 	// setting up meta data if exist for ecdsa
 	ecdsaMetaData, _, err := tss.GetStorage().LoadECDSAKeygen(tss.GetPeerHome())
 	if err != nil {
-		logging.Warn(models.ECDSANoKeygenDataFoundError)
+		logging.Warn(err)
 	}
 
 	err = tss.SetMetaData(ecdsaMetaData.MetaData, models.ECDSA)

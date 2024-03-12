@@ -31,7 +31,7 @@ var eddsaHandler handler
 //	- Initializes the eddsa sign partyId and peers
 func (s *operationEDDSASign) Init(rosenTss _interface.RosenTss, peers []models.Peer) error {
 
-	s.Logger.Info("initiation signing process")
+	s.Logger.Info("initiation eddsa signing process")
 
 	pID, err := s.LoadData(rosenTss)
 	if err != nil {
