@@ -97,13 +97,14 @@ func (s *StructSign) HandleOutMessage(rosenTss _interface.RosenTss, partyMsg tss
 func (s *StructSign) HandleEndMessage(rosenTss _interface.RosenTss, signatureData *common.SignatureData) error {
 
 	signData := models.SignData{
-		Signature: utils.HexEncoder(signatureData.Signature),
-		Message:   utils.HexEncoder(signatureData.M),
-		Status:    "success",
+		Signature:         utils.HexEncoder(signatureData.Signature),
+		Message:           utils.HexEncoder(signatureData.M),
+		SignatureRecovery: utils.HexEncoder(signatureData.SignatureRecovery),
+		Status:            "success",
 	}
 
 	s.Logger.Infof("signing process for Message: {%s} and Crypto: {%s} finished.", s.SignMessage.Message, s.SignMessage.Crypto)
-	s.Logger.Debugf("signature: {%v}, Message: {%v}", signData.Signature, signData.Message)
+	s.Logger.Debugf("signature: {%v}, Message: {%v}, SignatureRecovery: {%v}", signData.Signature, signData.Message, signData.SignatureRecovery)
 
 	err := rosenTss.GetConnection().CallBack(s.SignMessage.CallBackUrl, signData)
 	if err != nil {

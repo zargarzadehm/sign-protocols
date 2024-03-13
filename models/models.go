@@ -50,10 +50,11 @@ type Peer struct {
 }
 
 type SignData struct {
-	Message   string `json:"message"`
-	Signature string `json:"signature"`
-	Status    string `json:"status"`
-	Error     string `json:"error"`
+	Message           string `json:"message"`
+	Signature         string `json:"signature"`
+	SignatureRecovery string `json:"signatureRecovery"`
+	Status            string `json:"status"`
+	Error             string `json:"error"`
 }
 
 type KeygenData struct {
