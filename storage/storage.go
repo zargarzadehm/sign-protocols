@@ -86,12 +86,11 @@ func (f *storage) LoadEDDSAKeygen(peerHome string) (models.TssConfigEDDSA, *tss.
 
 	f.MakefilePath(peerHome, models.EDDSA)
 	files, err := ioutil.ReadDir(f.filePath)
-	if err != nil {
-		return models.TssConfigEDDSA{}, nil, err
-	}
-	if len(files) == 0 {
+	if err != nil || len(files) == 0 {
+		logging.Warnf("couldn't find eddsa keygen %v", err)
 		return models.TssConfigEDDSA{}, nil, errors.New(models.EDDSANoKeygenDataFoundError)
 	}
+
 	for _, File := range files {
 		if strings.Contains(File.Name(), "keygen") {
 			keygenFile = File.Name()
@@ -138,12 +137,11 @@ func (f *storage) LoadECDSAKeygen(peerHome string) (models.TssConfigECDSA, *tss.
 
 	f.MakefilePath(peerHome, models.ECDSA)
 	files, err := ioutil.ReadDir(f.filePath)
-	if err != nil {
-		return models.TssConfigECDSA{}, nil, err
-	}
-	if len(files) == 0 {
+	if err != nil || len(files) == 0 {
+		logging.Warnf("couldn't find ecdsa keygen %v", err)
 		return models.TssConfigECDSA{}, nil, errors.New(models.ECDSANoKeygenDataFoundError)
 	}
+
 	for _, File := range files {
 		if strings.Contains(File.Name(), "keygen") {
 			keygenFile = File.Name()
@@ -170,9 +168,9 @@ func (f *storage) LoadECDSAKeygen(peerHome string) (models.TssConfigECDSA, *tss.
 
 	//creating data from file
 	for _, kbxj := range tssConfig.KeygenData.BigXj {
-		kbxj.SetCurve(tss.Edwards())
+		kbxj.SetCurve(tss.S256())
 	}
-	tssConfig.KeygenData.ECDSAPub.SetCurve(tss.EC())
+	tssConfig.KeygenData.ECDSAPub.SetCurve(tss.S256())
 	id := xid.New()
 	pMoniker := fmt.Sprintf("tssPeer/%s", id.String())
 	partyID := tss.NewPartyID(id.String(), pMoniker, tssConfig.KeygenData.ShareID)

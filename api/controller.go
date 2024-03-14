@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 	"net/http"
@@ -16,10 +17,12 @@ type TssController interface {
 	Sign() echo.HandlerFunc
 	Keygen() echo.HandlerFunc
 	Message() echo.HandlerFunc
+	Validate(interface{}) error
 }
 
 type tssController struct {
-	rosenTss _interface.RosenTss
+	rosenTss  _interface.RosenTss
+	validator *validator.Validate
 }
 
 type response struct {
@@ -32,7 +35,8 @@ var logging *zap.SugaredLogger
 func NewTssController(rosenTss _interface.RosenTss) TssController {
 	logging = logger.NewSugar("controller")
 	return &tssController{
-		rosenTss: rosenTss,
+		rosenTss:  rosenTss,
+		validator: validator.New(),
 	}
 }
 
@@ -46,6 +50,13 @@ func (tssController *tssController) checkKeygenOperation(crypto string) error {
 				return fmt.Errorf("%s "+models.OperationIsRunningError, forbidden)
 			}
 		}
+	}
+	return nil
+}
+
+func (tssController *tssController) Validate(i interface{}) error {
+	if err := tssController.validator.Struct(i); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	return nil
 }
@@ -78,14 +89,17 @@ func (tssController *tssController) checkOperation(operationName string, crypto 
 
 // Keygen returns echo handler, starting new keygen process
 func (tssController *tssController) Keygen() echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c echo.Context) (err error) {
 		data := models.KeygenMessage{}
 
-		if err := c.Bind(&data); err != nil {
+		if err = c.Bind(&data); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 		}
+		if err = c.Validate(&data); err != nil {
+			return err
+		}
 		logging.Debugf("keygen controller called with data: {%v}", data)
-		err := tssController.checkOperation("keygen", data.Crypto)
+		err = tssController.checkOperation("keygen", data.Crypto)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusConflict, err.Error())
 		}
@@ -110,14 +124,17 @@ func (tssController *tssController) Keygen() echo.HandlerFunc {
 
 //	returns echo handler, starting new sign process.
 func (tssController *tssController) Sign() echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c echo.Context) (err error) {
 		data := models.SignMessage{}
 
-		if err := c.Bind(&data); err != nil {
+		if err = c.Bind(&data); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
+		if err = c.Validate(&data); err != nil {
+			return err
+		}
 		logging.Debugf("sign controller called with data: {%v}", data)
-		err := tssController.checkOperation("sign", data.Crypto)
+		err = tssController.checkOperation("sign", data.Crypto)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusConflict, err.Error())
 		}
@@ -126,7 +143,11 @@ func (tssController *tssController) Sign() echo.HandlerFunc {
 			switch err.Error() {
 			case models.DuplicatedMessageIdError:
 				return echo.NewHTTPError(http.StatusConflict, err.Error())
-			case models.ECDSANoKeygenDataFoundError, models.EDDSANoKeygenDataFoundError, models.WrongCryptoProtocolError:
+			case
+				models.ECDSANoKeygenDataFoundError,
+				models.WrongDerivationPathError,
+				models.EDDSANoKeygenDataFoundError,
+				models.WrongCryptoProtocolError:
 				return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 			default:
 				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
