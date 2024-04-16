@@ -63,7 +63,7 @@ func main() {
 	// creating new instance of echo framework
 	e := echo.New()
 	// initiating and reading configs
-
+	e.Debug = true
 	// creating connection and storage and app instance
 	conn := network.InitConnection(*publishPath, *subscriptionPath, *guardUrl, *getPeerIDPath)
 	localStorage := storage.NewStorage()
@@ -73,28 +73,6 @@ func main() {
 	err = tss.SetPeerHome(config.HomeAddress)
 	if err != nil {
 		logging.Fatal(err)
-	}
-
-	// setting up meta data if exist for eddsa
-	eddsaMetaData, _, err := tss.GetStorage().LoadEDDSAKeygen(tss.GetPeerHome())
-	if err != nil {
-		logging.Warn(err)
-	}
-
-	err = tss.SetMetaData(eddsaMetaData.MetaData, models.EDDSA)
-	if err != nil {
-		logging.Warn(models.EDDSANoMetaDataFoundError)
-	}
-
-	// setting up meta data if exist for ecdsa
-	ecdsaMetaData, _, err := tss.GetStorage().LoadECDSAKeygen(tss.GetPeerHome())
-	if err != nil {
-		logging.Warn(err)
-	}
-
-	err = tss.SetMetaData(ecdsaMetaData.MetaData, models.ECDSA)
-	if err != nil {
-		logging.Warn(models.ECDSANoMetaDataFoundError)
 	}
 
 	// subscribe to p2p
@@ -111,6 +89,28 @@ func main() {
 	err = tss.SetP2pId()
 	if err != nil {
 		logging.Fatal(err)
+	}
+
+	// setting up meta data if exist for eddsa
+	eddsaMetaData, _, err := tss.GetStorage().LoadEDDSAKeygen(tss.GetPeerHome(), tss.GetP2pId())
+	if err != nil {
+		logging.Warn(err)
+	}
+
+	err = tss.SetMetaData(eddsaMetaData.MetaData, models.EDDSA)
+	if err != nil {
+		logging.Warn(models.EDDSANoMetaDataFoundError)
+	}
+
+	// setting up meta data if exist for ecdsa
+	ecdsaMetaData, _, err := tss.GetStorage().LoadECDSAKeygen(tss.GetPeerHome(), tss.GetP2pId())
+	if err != nil {
+		logging.Warn(err)
+	}
+
+	err = tss.SetMetaData(ecdsaMetaData.MetaData, models.ECDSA)
+	if err != nil {
+		logging.Warn(models.ECDSANoMetaDataFoundError)
 	}
 
 	api.InitRouting(e, tssController)

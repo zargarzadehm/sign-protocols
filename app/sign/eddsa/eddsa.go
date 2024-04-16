@@ -23,6 +23,7 @@ type operationEDDSASign struct {
 
 type handler struct {
 	savedData eddsaKeygen.LocalPartySaveData
+	pID       *tss.PartyID
 }
 
 var logging *zap.SugaredLogger
@@ -212,23 +213,25 @@ func (h *handler) StartParty(
 //	- loads keygen data from file for signing
 //	- creates tss party ID with p2pID
 func (h *handler) LoadData(rosenTss _interface.RosenTss) (*tss.PartyID, error) {
-	data, pID, err := rosenTss.GetStorage().LoadEDDSAKeygen(rosenTss.GetPeerHome())
-	if err != nil {
-		logging.Error(err)
-		return nil, err
+	_, er := rosenTss.GetMetaData(models.EDDSA)
+	if h.savedData.ShareID == nil || (er != nil && er.Error() == models.EDDSANoMetaDataFoundError) {
+		data, pID, err := rosenTss.GetStorage().LoadEDDSAKeygen(rosenTss.GetPeerHome(), rosenTss.GetP2pId())
+		if err != nil {
+			logging.Error(err)
+			return nil, err
+		}
+		if pID == nil {
+			logging.Error("pID is nil")
+			return nil, fmt.Errorf("pID is nil")
+		}
+		h.savedData = data.KeygenData
+		h.pID = pID
+		err = rosenTss.SetMetaData(data.MetaData, models.EDDSA)
+		if err != nil {
+			return nil, err
+		}
 	}
-	if pID == nil {
-		logging.Error("pID is nil")
-		return nil, fmt.Errorf("pID is nil")
-	}
-	h.savedData = data.KeygenData
-	pID.Moniker = fmt.Sprintf("tssPeer/%s", rosenTss.GetP2pId())
-	pID.Id = rosenTss.GetP2pId()
-	err = rosenTss.SetMetaData(data.MetaData, models.EDDSA)
-	if err != nil {
-		return nil, err
-	}
-	return pID, nil
+	return h.pID, nil
 }
 
 //	- returns key_list and shared_ID of peer stored in the struct
