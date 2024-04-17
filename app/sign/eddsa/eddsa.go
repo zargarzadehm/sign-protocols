@@ -244,6 +244,7 @@ func (s *operationEDDSASign) HandleEndMessage(rosenTss _interface.RosenTss, sign
 	signData := models.SignData{
 		Signature: utils.HexEncoder(signatureData.Signature),
 		Message:   utils.HexEncoder(signatureData.M),
+		TrustKey:  rosenTss.GetTrustKey(),
 		Status:    "success",
 	}
 
