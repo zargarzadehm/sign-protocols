@@ -41,4 +41,5 @@ type RosenTss interface {
 	SetP2pId() error
 	GetP2pId() string
 	GetConfig() models.Config
+	GetTrustKey() string
 }

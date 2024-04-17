@@ -32,6 +32,7 @@ func main() {
 	configFile := flag.String(
 		"configFile", "./conf/conf.env", "config file",
 	)
+	trustKey := flag.String("trustKey", "", "fd010545-1f9e-41d8-8515-1094c0498073")
 	flag.Parse()
 
 	config, err := utils.InitConfig(*configFile)
@@ -60,6 +61,11 @@ func main() {
 	}()
 
 	logging.Debugf("config: %+v", config)
+
+	if *trustKey == "" {
+		logging.Warnf("the trustKey flag is not set or is empty")
+	}
+
 	// creating new instance of echo framework
 	e := echo.New()
 	// initiating and reading configs
@@ -68,7 +74,8 @@ func main() {
 	conn := network.InitConnection(*publishPath, *subscriptionPath, *guardUrl, *getPeerIDPath)
 	localStorage := storage.NewStorage()
 
-	tss := app.NewRosenTss(conn, localStorage, config)
+	tss := app.NewRosenTss(conn, localStorage, config, *trustKey)
+
 	// setting up peer home based on configs
 	err = tss.SetPeerHome(config.HomeAddress)
 	if err != nil {
