@@ -212,13 +212,13 @@ func (h *handler) StartParty(
 		keyDerivationDelta := il
 
 		// deep copy h.savedData to keys
-		origJSON, er := json.Marshal(h.savedData)
-		if er != nil {
-			return er
+		origJSON, err1 := json.Marshal(h.savedData)
+		if err1 != nil {
+			return err1
 		}
 		clone := ecdsaKeygen.LocalPartySaveData{}
-		if er = json.Unmarshal(origJSON, &clone); er != nil {
-			return er
+		if err1 = json.Unmarshal(origJSON, &clone); err1 != nil {
+			return err1
 		}
 		keys := []ecdsaKeygen.LocalPartySaveData{clone}
 
@@ -243,8 +243,8 @@ func (h *handler) StartParty(
 //	- loads keygen data from file for signing
 //	- creates tss party ID with p2pID
 func (h *handler) LoadData(rosenTss _interface.RosenTss) (*tss.PartyID, error) {
-	_, er := rosenTss.GetMetaData(models.ECDSA)
-	if h.savedData.ShareID == nil || (er != nil && er.Error() == models.ECDSANoMetaDataFoundError) {
+	_, err1 := rosenTss.GetMetaData(models.ECDSA)
+	if h.savedData.ShareID == nil || (err1 != nil && err1.Error() == models.ECDSANoMetaDataFoundError) {
 		data, pID, err := rosenTss.GetStorage().LoadECDSAKeygen(rosenTss.GetPeerHome(), rosenTss.GetP2pId())
 		if err != nil {
 			logging.Error(err)

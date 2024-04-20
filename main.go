@@ -34,6 +34,7 @@ func main() {
 	)
 	flag.Parse()
 
+	// initiating and reading configs
 	config, err := utils.InitConfig(*configFile)
 	if err != nil {
 		panic(err)
@@ -62,8 +63,7 @@ func main() {
 	logging.Debugf("config: %+v", config)
 	// creating new instance of echo framework
 	e := echo.New()
-	// initiating and reading configs
-	e.Debug = true
+
 	// creating connection and storage and app instance
 	conn := network.InitConnection(*publishPath, *subscriptionPath, *guardUrl, *getPeerIDPath)
 	localStorage := storage.NewStorage()

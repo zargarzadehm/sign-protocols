@@ -213,8 +213,8 @@ func (h *handler) StartParty(
 //	- loads keygen data from file for signing
 //	- creates tss party ID with p2pID
 func (h *handler) LoadData(rosenTss _interface.RosenTss) (*tss.PartyID, error) {
-	_, er := rosenTss.GetMetaData(models.EDDSA)
-	if h.savedData.ShareID == nil || (er != nil && er.Error() == models.EDDSANoMetaDataFoundError) {
+	_, err1 := rosenTss.GetMetaData(models.EDDSA)
+	if h.savedData.ShareID == nil || (err1 != nil && err1.Error() == models.EDDSANoMetaDataFoundError) {
 		data, pID, err := rosenTss.GetStorage().LoadEDDSAKeygen(rosenTss.GetPeerHome(), rosenTss.GetP2pId())
 		if err != nil {
 			logging.Error(err)
