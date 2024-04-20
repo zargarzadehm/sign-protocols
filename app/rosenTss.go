@@ -151,7 +151,6 @@ func (r *rosenTss) StartNewSign(signMessage models.SignMessage) error {
 	}
 
 	var operation _interface.SignOperation
-	println(signMessage.Crypto)
 	switch signMessage.Crypto {
 	case models.EDDSA:
 		operation = eddsaSign.NewSignEDDSAOperation(signMessage)

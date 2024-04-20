@@ -28,6 +28,7 @@ type operationECDSASign struct {
 
 type handler struct {
 	savedData ecdsaKeygen.LocalPartySaveData
+	pID       *tss.PartyID
 }
 
 var logging *zap.SugaredLogger
@@ -209,8 +210,19 @@ func (h *handler) StartParty(
 		}
 
 		keyDerivationDelta := il
-		key := []ecdsaKeygen.LocalPartySaveData{h.savedData}
-		err = ecdsaSigning.UpdatePublicKeyAndAdjustBigXj(keyDerivationDelta, key, &extendedChildPk.PublicKey, tss.S256())
+
+		// deep copy h.savedData to keys
+		origJSON, err1 := json.Marshal(h.savedData)
+		if err1 != nil {
+			return err1
+		}
+		clone := ecdsaKeygen.LocalPartySaveData{}
+		if err1 = json.Unmarshal(origJSON, &clone); err1 != nil {
+			return err1
+		}
+		keys := []ecdsaKeygen.LocalPartySaveData{clone}
+
+		err = ecdsaSigning.UpdatePublicKeyAndAdjustBigXj(keyDerivationDelta, keys, &extendedChildPk.PublicKey, tss.S256())
 		if err != nil {
 			return err
 		}
@@ -219,7 +231,7 @@ func (h *handler) StartParty(
 		signDataBigInt := new(big.Int).SetBytes(msgBytes)
 		localTssData.Params = tss.NewParameters(tss.S256(), ctx, localPartyId, len(localTssData.PartyIds), threshold)
 
-		localTssData.Party = ecdsaSigning.NewLocalPartyWithKDD(signDataBigInt, localTssData.Params, key[0], keyDerivationDelta, outCh, endCh, len(msgBytes))
+		localTssData.Party = ecdsaSigning.NewLocalPartyWithKDD(signDataBigInt, localTssData.Params, keys[0], keyDerivationDelta, outCh, endCh, len(msgBytes))
 		if err := localTssData.Party.Start(); err != nil {
 			return err
 		}
@@ -231,22 +243,25 @@ func (h *handler) StartParty(
 //	- loads keygen data from file for signing
 //	- creates tss party ID with p2pID
 func (h *handler) LoadData(rosenTss _interface.RosenTss) (*tss.PartyID, error) {
-	data, pID, err := rosenTss.GetStorage().LoadECDSAKeygen(rosenTss.GetPeerHome())
-	if err != nil {
-		return nil, err
+	_, err1 := rosenTss.GetMetaData(models.ECDSA)
+	if h.savedData.ShareID == nil || (err1 != nil && err1.Error() == models.ECDSANoMetaDataFoundError) {
+		data, pID, err := rosenTss.GetStorage().LoadECDSAKeygen(rosenTss.GetPeerHome(), rosenTss.GetP2pId())
+		if err != nil {
+			logging.Error(err)
+			return nil, err
+		}
+		if pID == nil {
+			logging.Error("pID is nil")
+			return nil, fmt.Errorf("pID is nil")
+		}
+		h.savedData = data.KeygenData
+		h.pID = pID
+		err = rosenTss.SetMetaData(data.MetaData, models.ECDSA)
+		if err != nil {
+			return nil, err
+		}
 	}
-	if pID == nil {
-		logging.Error("pID is nil")
-		return nil, fmt.Errorf("pID is nil")
-	}
-	h.savedData = data.KeygenData
-	pID.Moniker = fmt.Sprintf("tssPeer/%s", rosenTss.GetP2pId())
-	pID.Id = rosenTss.GetP2pId()
-	err = rosenTss.SetMetaData(data.MetaData, models.ECDSA)
-	if err != nil {
-		return nil, err
-	}
-	return pID, nil
+	return h.pID, nil
 }
 
 //	- returns key_list and shared_ID of peer stored in the struct
