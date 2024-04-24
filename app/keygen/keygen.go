@@ -2,8 +2,6 @@ package keygen
 
 import (
 	"fmt"
-	eddsaKeygen "github.com/bnb-chain/tss-lib/v2/eddsa/keygen"
-	"github.com/bnb-chain/tss-lib/v2/tss"
 	"go.uber.org/zap"
 	_interface "rosen-bridge/tss-api/app/interface"
 	"rosen-bridge/tss-api/models"
@@ -13,21 +11,29 @@ const (
 	KeygenFileName = "keygen_data.json"
 )
 
-type Handler interface {
-	StartParty(
-		localTssData *models.TssData,
-		threshold int,
-		outCh chan tss.Message,
-		endCh chan *eddsaKeygen.LocalPartySaveData,
-	) error
-}
-
 type StructKeygen struct {
 	_interface.KeygenOperationHandler
 	LocalTssData  models.TssData
 	KeygenMessage models.KeygenMessage
 	Logger        *zap.SugaredLogger
-	Handler
+}
+
+//	- creates a gossip message from payload.
+//	- sends the gossip message to Publish function.
+func (s *StructKeygen) NewMessage(rosenTss _interface.RosenTss, payload models.Payload, receiver string) error {
+	s.Logger.Infof("creating new gossip message")
+
+	gossipMessage := models.GossipMessage{
+		Message:    payload.Message,
+		MessageId:  payload.MessageId,
+		SenderId:   payload.SenderId,
+		ReceiverId: receiver,
+	}
+	err := rosenTss.GetConnection().Publish(gossipMessage)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //	- Updates party on received message destination.
