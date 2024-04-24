@@ -100,6 +100,7 @@ func (s *StructSign) HandleEndMessage(rosenTss _interface.RosenTss, signatureDat
 		Signature:         utils.HexEncoder(signatureData.Signature),
 		Message:           utils.HexEncoder(signatureData.M),
 		SignatureRecovery: utils.HexEncoder(signatureData.SignatureRecovery),
+		TrustKey:          rosenTss.GetTrustKey(),
 		Status:            "success",
 	}
 

@@ -55,6 +55,7 @@ type SignData struct {
 	SignatureRecovery string `json:"signatureRecovery"`
 	Status            string `json:"status"`
 	Error             string `json:"error"`
+	TrustKey          string `json:"trustKey"`
 }
 
 type KeygenData struct {
