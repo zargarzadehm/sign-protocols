@@ -22,6 +22,8 @@ jobs:
     defaults:
       run:
         shell: bash
+        working-directory: ./services/tss-api
+
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -37,7 +39,6 @@ jobs:
 
       - name: Run build and prepare target files
         run: |
-          go version
           CGO_ENABLED=0 go build -trimpath -o bin/rosenTss-${{ matrix.platform }}-${{ github.ref_name }}
           mkdir conf
           mv conf.env.sample conf/conf.env
@@ -49,6 +50,6 @@ jobs:
       - name: Upload Release File
         uses: softprops/action-gh-release@v1
         with:
-          files: ./rosenTss*.zip
+          files: ./services/tss-api/rosenTss*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
