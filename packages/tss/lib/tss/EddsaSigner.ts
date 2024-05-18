@@ -1,11 +1,9 @@
-import { ECDSA } from '../enc';
-import { EcdsaConfig, Sign, SignResult } from '../types/signer';
+import { EdDSA } from '../enc';
+import { EddsaConfig, Sign, SignResult } from '../types/signer';
 import { TssSigner } from './TssSigner';
 
-export class EcdsaSigner extends TssSigner {
-  derivationPath: number[];
-
-  constructor(config: EcdsaConfig) {
+export class EddsaSigner extends TssSigner {
+  constructor(config: EddsaConfig) {
     super({
       logger: config.logger,
       guardsPk: config.guardsPk,
@@ -22,7 +20,7 @@ export class EcdsaSigner extends TssSigner {
       thresholdTTL: config.thresholdTTL,
       responseDelay: config.responseDelay,
       signPerRoundLimit: config.signPerRoundLimit,
-      signer: new ECDSA(config.secret),
+      signer: new EdDSA(config.secret),
     });
   }
 
@@ -38,20 +36,15 @@ export class EcdsaSigner extends TssSigner {
     derivationPath?: number[],
   ): Promise<SignResult> => {
     return new Promise<SignResult>((resolve, reject) => {
-      if (!derivationPath)
-        throw Error(`derivationPath is required in ECDSA signing`);
+      if (derivationPath)
+        throw Error(`derivationPath is not supported in EdDSA signing`);
       this.sign(
         message,
-        (
-          status: boolean,
-          message?: string,
-          signature?: string,
-          signatureRecovery?: string,
-        ) => {
-          if (status && signature && signatureRecovery)
+        (status: boolean, message?: string, signature?: string) => {
+          if (status && signature)
             resolve({
-              signature,
-              signatureRecovery,
+              signature: signature,
+              signatureRecovery: undefined,
             });
           reject(message);
         },
@@ -72,14 +65,11 @@ export class EcdsaSigner extends TssSigner {
   handleSuccessfulSign = async (
     sign: Sign,
     signature?: string,
-    signatureRecovery?: string,
   ): Promise<void> => {
-    if (signature && signatureRecovery) {
-      sign.callback(true, undefined, signature, signatureRecovery);
+    if (signature) {
+      sign.callback(true, undefined, signature);
     } else {
-      throw Error(
-        'signature and signature recovery are required when ECDSA sign is successful',
-      );
+      throw Error('signature is required when EdDSA sign is successful');
     }
   };
 }

@@ -1,5 +1,5 @@
-import { Communicator } from '../../lib/abstract/Communicator';
-import { EncryptionHandler } from '../../lib/abstract/EncryptionHandler';
+import { Communicator } from '../../lib';
+import { EncryptionHandler } from '../../lib';
 import { DummyLogger } from '@rosen-bridge/abstract-logger';
 
 export class TestCommunicator extends Communicator {

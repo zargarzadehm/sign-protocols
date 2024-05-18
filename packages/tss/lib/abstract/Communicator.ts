@@ -171,7 +171,7 @@ export abstract class Communicator {
    * Update guards pk to new set
    * @param newPks
    */
-  changePks = async (newPks: Array<string>) => {
+  async changePks(newPks: Array<string>) {
     this.guardPks = [...newPks];
-  };
+  }
 }

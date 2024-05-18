@@ -6,8 +6,9 @@ run_go_ci:
   trigger:
     include: .gitlab/go-ci.yml
     strategy: depend
-# TODO: should be comment until add a ts package
-# run_ts_ci:
-#   stage: triggers
-#   trigger:
-#     include: .gitlab/ts-ci.yml
+
+run_ts_ci:
+  stage: triggers
+  trigger:
+    include: .gitlab/ts-ci.yml
+    strategy: depend

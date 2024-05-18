@@ -1296,6 +1296,7 @@ describe('TssSigner', () => {
     const callback = jest.fn();
     beforeEach(() => {
       const signs = signer.getSigns();
+      jest.resetAllMocks();
       signs.push({
         msg: 'valid signing data',
         callback: callback,

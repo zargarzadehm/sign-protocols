@@ -18,6 +18,7 @@ describe('GuardDetection', () => {
     guardSigners = signers.guardSigners;
     jest.resetAllMocks();
     mockSubmit = jest.fn();
+    jest.spyOn(Date, 'now').mockRestore();
     detection = new TestGuardDetection({
       submit: mockSubmit,
       signer: guardSigners[0],
