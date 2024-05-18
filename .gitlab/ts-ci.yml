@@ -1,0 +1,77 @@
+image: node:20.10.0
+
+stages:
+  - installation
+  - type_check
+  - lint
+  - test
+  - coverage
+
+installation:
+  stage: installation
+  cache:
+    key: $CI_COMMIT_REF_NAME
+    policy: push
+    paths:
+      - node_modules
+      - '**/node_modules'
+  script:
+    - npm ci
+
+type_check:
+  stage: type_check
+  needs: ['installation']
+  cache:
+    key: $CI_COMMIT_REF_NAME
+    policy: pull
+    paths:
+      - node_modules
+      - '**/node_modules'
+      - '**/dist'
+  script:
+    - npm run type-check --workspace packages/*
+
+lint:
+  stage: lint
+  needs: ['type_check']
+  cache:
+    key: $CI_COMMIT_REF_NAME
+    policy: pull
+    paths:
+      - node_modules
+      - '**/node_modules'
+      - '**/dist'
+  script:
+    - npm run lint --workspace packages/*
+
+test:
+  stage: test
+  needs: ['lint']
+  cache:
+    key: $CI_COMMIT_REF_NAME
+    policy: pull
+    paths:
+      - node_modules
+      - '**/node_modules'
+      - '**/dist'
+  script:
+    - npm run test --workspace packages/*
+
+coverage:
+  stage: coverage
+  needs: ['test']
+  cache:
+    key: $CI_COMMIT_REF_NAME
+    policy: pull
+    paths:
+      - node_modules
+      - '**/node_modules'
+      - '**/dist'
+  script:
+    - npm run coverage --workspace packages/*
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: '**/coverage/cobertura-coverage.xml'
