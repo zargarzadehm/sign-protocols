@@ -11,7 +11,7 @@ variables:
 preparing:
   stage: prepare_go
   cache:
-    key: $CI_COMMIT_REF_NAME
+    key: ${CI_COMMIT_REF_NAME}-go
     policy: push
     paths:
       - $CI_PROJECT_DIR/.go
@@ -24,7 +24,7 @@ preparing:
 lint:
   stage: lint
   cache:
-    key: $CI_COMMIT_REF_NAME
+    key: ${CI_COMMIT_REF_NAME}-go
     policy: pull
     paths:
       - $CI_PROJECT_DIR/.go
@@ -36,7 +36,7 @@ lint:
 build:
   stage: build
   cache:
-    key: $CI_COMMIT_REF_NAME
+    key: ${CI_COMMIT_REF_NAME}-go
     policy: pull
     paths:
       - $CI_PROJECT_DIR/.go

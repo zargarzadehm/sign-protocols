@@ -10,7 +10,7 @@ stages:
 installation:
   stage: installation
   cache:
-    key: $CI_COMMIT_REF_NAME
+    key: ${CI_COMMIT_REF_NAME}-ts
     policy: push
     paths:
       - node_modules
@@ -22,7 +22,7 @@ type_check:
   stage: type_check
   needs: ['installation']
   cache:
-    key: $CI_COMMIT_REF_NAME
+    key: ${CI_COMMIT_REF_NAME}-ts
     policy: pull
     paths:
       - node_modules
@@ -35,7 +35,7 @@ lint:
   stage: lint
   needs: ['type_check']
   cache:
-    key: $CI_COMMIT_REF_NAME
+    key: ${CI_COMMIT_REF_NAME}-ts
     policy: pull
     paths:
       - node_modules
@@ -48,7 +48,7 @@ test:
   stage: test
   needs: ['lint']
   cache:
-    key: $CI_COMMIT_REF_NAME
+    key: ${CI_COMMIT_REF_NAME}-ts
     policy: pull
     paths:
       - node_modules
@@ -61,7 +61,7 @@ coverage:
   stage: coverage
   needs: ['test']
   cache:
-    key: $CI_COMMIT_REF_NAME
+    key: ${CI_COMMIT_REF_NAME}-ts
     policy: pull
     paths:
       - node_modules
