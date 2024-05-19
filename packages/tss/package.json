@@ -2,6 +2,7 @@
   "name": "@rosen-bridge/tss",
   "version": "3.0.1",
   "description": "TypeScript library for building and validating TSS signatures.",
+  "repository": "https://github.com/rosen-bridge/sign-protocols",
   "main": "dist/lib/index.js",
   "types": "dist/lib/index.d.ts",
   "type": "module",
