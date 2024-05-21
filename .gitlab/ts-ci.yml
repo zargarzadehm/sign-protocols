@@ -29,7 +29,7 @@ type_check:
       - '**/node_modules'
       - '**/dist'
   script:
-    - npm run type-check --workspace packages/*
+    - npm run type-check --workspace packages
 
 lint:
   stage: lint
@@ -42,7 +42,7 @@ lint:
       - '**/node_modules'
       - '**/dist'
   script:
-    - npm run lint --workspace packages/*
+    - npm run lint --workspace packages
 
 test:
   stage: test
@@ -55,7 +55,7 @@ test:
       - '**/node_modules'
       - '**/dist'
   script:
-    - npm run test --workspace packages/*
+    - npm run test --workspace packages
 
 coverage:
   stage: coverage
@@ -68,7 +68,7 @@ coverage:
       - '**/node_modules'
       - '**/dist'
   script:
-    - npm run coverage --workspace packages/*
+    - npm run coverage --workspace packages
   coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
   artifacts:
     reports:
