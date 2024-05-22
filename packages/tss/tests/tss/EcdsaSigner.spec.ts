@@ -1,4 +1,5 @@
 import { EcdsaSigner, ECDSA, GuardDetection } from '../../lib';
+import { describe, expect, it, vi } from 'vitest';
 
 describe('EcdsaSigner', () => {
   const currentTime = 1686286005068;
@@ -16,16 +17,16 @@ describe('EcdsaSigner', () => {
     it('should throw error when derivationPath is not defined', async () => {
       const sk = await ECDSA.randomKey();
       const signer = new ECDSA(sk);
-      jest.restoreAllMocks();
-      jest.spyOn(Date, 'now').mockReturnValue(currentTime);
+      vi.restoreAllMocks();
+      vi.setSystemTime(new Date(currentTime));
       const detection = new GuardDetection({
         signer: signer,
         guardsPublicKey: [],
-        submit: jest.fn(),
+        submit: vi.fn(),
         getPeerId: () => Promise.resolve('myPeerId'),
       });
       const ecdsaSigner = new EcdsaSigner({
-        submitMsg: jest.fn(),
+        submitMsg: vi.fn(),
         callbackUrl: '',
         secret: sk,
         detection: detection,

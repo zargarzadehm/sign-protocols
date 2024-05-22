@@ -3,7 +3,7 @@ import {
   DetectionApprovePayload,
   DetectionHeartbeatPayload,
   DetectionRegisterPayload,
-} from '../../lib/types/detection';
+} from '../../lib';
 
 /**
  * GuardDetection class for testing

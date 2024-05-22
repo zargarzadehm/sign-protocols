@@ -1,9 +1,10 @@
 import { EdDSA } from '../../lib';
 import { TestCommunicator } from './TestCommunicator';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 describe('Communicator', () => {
   let communicator: TestCommunicator;
-  let mockSubmit = jest.fn();
+  let mockSubmit = vi.fn();
   let guardSigners: Array<EdDSA>;
   const payload = { foo: 'bar' };
 
@@ -15,7 +16,7 @@ describe('Communicator', () => {
       guardSigners.push(sk);
       guardPks.push(await sk.getPk());
     }
-    mockSubmit = jest.fn();
+    mockSubmit = vi.fn();
     communicator = new TestCommunicator(guardSigners[1], mockSubmit, guardPks);
   });
 
@@ -31,7 +32,7 @@ describe('Communicator', () => {
      */
     it('should return current timestamp rounded to seconds', () => {
       const currentTime = 1685683305;
-      jest.spyOn(Date, 'now').mockReturnValue(currentTime * 1000 + 125);
+      vi.spyOn(Date, 'now').mockReturnValue(currentTime * 1000 + 125);
       const res = communicator.mockedGetDate();
       expect(res).toEqual(currentTime);
     });
@@ -54,7 +55,7 @@ describe('Communicator', () => {
       const sign = await guardSigners[1].sign(
         `${JSON.stringify(payload)}${currentTime}${publicKey}`,
       );
-      jest.spyOn(Date, 'now').mockReturnValue(currentTime * 1000);
+      vi.spyOn(Date, 'now').mockReturnValue(currentTime * 1000);
       await communicator.testSendMessage('msg', payload, []);
       const expected = {
         type: 'msg',
@@ -87,7 +88,7 @@ describe('Communicator', () => {
       const sign = await guardSigners[2].sign(
         `${JSON.stringify(payload)}${currentTime}${publicKey}`,
       );
-      jest.spyOn(Date, 'now').mockReturnValue(currentTime * 1000);
+      vi.spyOn(Date, 'now').mockReturnValue(currentTime * 1000);
       const message = {
         type: 'message',
         payload: payload,
@@ -123,7 +124,7 @@ describe('Communicator', () => {
       const sign = await guardSigners[2].sign(
         `${JSON.stringify(payload)}${currentTime}${publicKey}`,
       );
-      jest.spyOn(Date, 'now').mockReturnValue(currentTime * 1000);
+      vi.spyOn(Date, 'now').mockReturnValue(currentTime * 1000);
       const message = {
         type: 'message',
         payload: payload,
@@ -151,7 +152,7 @@ describe('Communicator', () => {
       const sign = await guardSigners[2].sign(
         `${JSON.stringify(payload)}${currentTime}${publicKey}`,
       );
-      jest.spyOn(Date, 'now').mockReturnValue(currentTime * 1000);
+      vi.spyOn(Date, 'now').mockReturnValue(currentTime * 1000);
       const message = {
         type: 'message',
         payload: payload,
@@ -180,7 +181,7 @@ describe('Communicator', () => {
       const sign = await guardSigners[2].sign(
         `${JSON.stringify(payload)}${currentTime - 60001}${publicKey}`,
       );
-      jest.spyOn(Date, 'now').mockReturnValue(currentTime * 1000);
+      vi.spyOn(Date, 'now').mockReturnValue(currentTime * 1000);
       const message = {
         type: 'message',
         payload: payload,

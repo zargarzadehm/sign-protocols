@@ -116,6 +116,7 @@ export class GuardDetection extends Communicator {
     if ((await this.activeGuards()).length < this.needGuardThreshold) {
       await this.init();
     } else {
+      // TODO: can improve
       const timedOutIndexes = this.guardsInfo
         .map((item, index) =>
           item.peerId !== '' &&
