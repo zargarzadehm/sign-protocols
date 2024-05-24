@@ -1,6 +1,7 @@
 import { Communicator } from '../../lib';
 import { EncryptionHandler } from '../../lib';
 import { DummyLogger } from '@rosen-bridge/abstract-logger';
+import { vi } from 'vitest';
 
 export class TestCommunicator extends Communicator {
   constructor(
@@ -19,7 +20,7 @@ export class TestCommunicator extends Communicator {
     return this.sendMessage(messageType, payload, peers);
   };
 
-  processMessage = jest.fn();
+  processMessage = vi.fn();
 
   mockedGetDate = () => this.getDate();
 }

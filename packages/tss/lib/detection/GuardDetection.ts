@@ -116,6 +116,8 @@ export class GuardDetection extends Communicator {
     if ((await this.activeGuards()).length < this.needGuardThreshold) {
       await this.init();
     } else {
+      // TODO: improve the performance of TSS functions
+      //  local:ergo/rosen-bridge/sign-protocols#18
       const timedOutIndexes = this.guardsInfo
         .map((item, index) =>
           item.peerId !== '' &&

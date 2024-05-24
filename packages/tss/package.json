@@ -11,8 +11,8 @@
     "lint": "eslint --fix . && npm run prettify",
     "build": "tsc --build tsconfig.build.json",
     "type-check": "tsc --noEmit",
-    "test": "jest --runInBand",
-    "coverage": "jest --coverage --runInBand",
+    "test": "NODE_OPTIONS=--loader=extensionless vitest --run",
+    "coverage": "npm run test -- --coverage",
     "release": "npm run test && npm run build && npm publish --access public"
   },
   "files": [
@@ -21,20 +21,17 @@
   "author": "Rosen Team",
   "license": "GPL-3.0",
   "devDependencies": {
-    "@babel/core": "^7.22.1",
-    "@babel/preset-env": "^7.22.2",
-    "@types/jest": "^29.5.12",
-    "@types/node": "^18.15.10",
+    "@types/node": "^20.11.9",
     "@types/secp256k1": "^4.0.3",
-    "@typescript-eslint/eslint-plugin": "^5.56.0",
-    "@typescript-eslint/parser": "^5.56.0",
-    "babel-jest": "^29.7.0",
-    "eslint": "^8.36.0",
-    "eslint-config-prettier": "^8.8.0",
-    "jest": "^29.7.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.1",
+    "@typescript-eslint/parser": "^6.19.1",
+    "@vitest/coverage-istanbul": "^1.2.2",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "extensionless": "^1.9.6",
     "prettier": "^2.8.7",
-    "ts-jest": "^29.1.2",
-    "typescript": "^5.0.2"
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.2"
   },
   "directories": {
     "lib": "lib",

@@ -12,10 +12,11 @@ import {
   requestMessage,
   startMessage,
 } from '../../lib/const/signer';
+import { describe, expect, it, vi, beforeEach, MockInstance } from 'vitest';
 
 describe('TssSigner', () => {
   let signer: TestTssSigner;
-  let mockSubmit = jest.fn();
+  let mockSubmit = vi.fn();
   let guardSigners: Array<EdDSA>;
   let detection: GuardDetection;
   const currentTime = 1686286005068;
@@ -24,9 +25,9 @@ describe('TssSigner', () => {
   beforeEach(async () => {
     const signers = await generateSigners();
     guardSigners = signers.guardSigners;
-    jest.restoreAllMocks();
-    jest.spyOn(Date, 'now').mockReturnValue(currentTime);
-    mockSubmit = jest.fn();
+    vi.restoreAllMocks();
+    vi.setSystemTime(new Date(currentTime));
+    mockSubmit = vi.fn();
     detection = new GuardDetection({
       signer: guardSigners[0],
       guardsPublicKey: signers.guardPks,
@@ -146,7 +147,7 @@ describe('TssSigner', () => {
       signer.getSigns().push({
         posted: false,
         msg: 'random message',
-        callback: jest.fn(),
+        callback: vi.fn(),
         signs: [],
         addedTime: currentTime,
         chainCode: 'chainCode',
@@ -162,7 +163,7 @@ describe('TssSigner', () => {
      * - mocked cleanup must call once
      */
     it('should call cleanup', async () => {
-      const mockedCleanup = jest
+      const mockedCleanup = vi
         .spyOn(signer as any, 'cleanup')
         .mockReturnValue(null);
       await signer.update();
@@ -186,7 +187,7 @@ describe('TssSigner', () => {
           peerId: `peerId-${index}`,
           publicKey: `publicKey-${index}`,
         }));
-      jest.spyOn(detection, 'activeGuards').mockResolvedValue(activeGuards);
+      vi.spyOn(detection, 'activeGuards').mockResolvedValue(activeGuards);
       await signer.update();
       expect(mockSubmit).not.toBeCalled();
     });
@@ -203,8 +204,8 @@ describe('TssSigner', () => {
      * - mocked submitMsg must not call
      */
     it('should not call sendMessage when active guards list length lower than threshold', async () => {
-      jest.spyOn(Date, 'now').mockReturnValue(1686285600608);
-      jest.spyOn(signer as any, 'updateThreshold').mockResolvedValue(undefined);
+      vi.setSystemTime(new Date(1686285600608));
+      vi.spyOn(signer as any, 'updateThreshold').mockResolvedValue(undefined);
       (signer as any).threshold = { expiry: 0, value: 7 };
       const activeGuards = Array(6)
         .fill('')
@@ -212,7 +213,7 @@ describe('TssSigner', () => {
           peerId: `peerId-${index}`,
           publicKey: `publicKey-${index}`,
         }));
-      jest.spyOn(detection, 'activeGuards').mockResolvedValue(activeGuards);
+      vi.spyOn(detection, 'activeGuards').mockResolvedValue(activeGuards);
       await signer.update();
       expect(mockSubmit).not.toBeCalled();
     });
@@ -228,14 +229,14 @@ describe('TssSigner', () => {
      * - mocked submitMsg must call once
      */
     it('should call once sendMessage when more than one time called', async () => {
-      jest.spyOn(Date, 'now').mockReturnValue(1686285600608);
+      vi.setSystemTime(new Date(1686285600608));
       const activeGuards = Array(7)
         .fill('')
         .map((item, index) => ({
           peerId: `peerId-${index}`,
           publicKey: `publicKey-${index}`,
         }));
-      jest.spyOn(detection, 'activeGuards').mockResolvedValue(activeGuards);
+      vi.spyOn(detection, 'activeGuards').mockResolvedValue(activeGuards);
       await signer.update();
       await signer.update();
       expect(mockSubmit).toHaveBeenCalledTimes(1);
@@ -253,19 +254,19 @@ describe('TssSigner', () => {
      * - mocked submitMsg must call twice
      */
     it('should send at most two messages', async () => {
-      jest.spyOn(Date, 'now').mockReturnValue(1686285600608);
+      vi.setSystemTime(new Date(1686285600608));
       const activeGuards = Array(7)
         .fill('')
         .map((item, index) => ({
           peerId: `peerId-${index}`,
           publicKey: `publicKey-${index}`,
         }));
-      jest.spyOn(detection, 'activeGuards').mockResolvedValue(activeGuards);
+      vi.spyOn(detection, 'activeGuards').mockResolvedValue(activeGuards);
       for (let i = 0; i < 3; i++) {
         signer.getSigns().push({
           posted: false,
           msg: `random message ${i}`,
-          callback: jest.fn(),
+          callback: vi.fn(),
           signs: [],
           addedTime: currentTime + i * 10,
           chainCode: 'chainCode',
@@ -287,14 +288,14 @@ describe('TssSigner', () => {
      * - only first element must have value
      */
     it('should update sings array', async () => {
-      jest.spyOn(Date, 'now').mockReturnValue(1686285600608);
+      vi.setSystemTime(new Date(1686285600608));
       const activeGuards = Array(7)
         .fill('')
         .map((item, index) => ({
           peerId: `peerId-${index}`,
           publicKey: `publicKey-${index}`,
         }));
-      jest.spyOn(detection, 'activeGuards').mockResolvedValue(activeGuards);
+      vi.spyOn(detection, 'activeGuards').mockResolvedValue(activeGuards);
       await signer.update();
       const signs = signer.getSigns()[0].signs;
       expect(signs.length).toEqual(10);
@@ -329,7 +330,7 @@ describe('TssSigner', () => {
      */
     it('should return false when remain more than NoWork seconds', () => {
       const currentTime = 1686285606068;
-      jest.spyOn(Date, 'now').mockReturnValue(currentTime);
+      vi.setSystemTime(new Date(currentTime));
       expect(signer.mockedIsNoWorkTime()).toBeFalsy();
     });
 
@@ -344,7 +345,7 @@ describe('TssSigner', () => {
      */
     it('should return true when remain less than NoWork seconds', () => {
       const currentTime = 1686285651068;
-      jest.spyOn(Date, 'now').mockReturnValue(currentTime);
+      vi.setSystemTime(new Date(currentTime));
       expect(signer.mockedIsNoWorkTime()).toBeTruthy();
     });
   });
@@ -359,7 +360,7 @@ describe('TssSigner', () => {
      * - an element with entered msg must add to sign list
      */
     it('should add new sign to list', async () => {
-      await signer.callSign('msg', jest.fn(), 'chainCode');
+      await signer.callSign('msg', vi.fn(), 'chainCode');
       expect(
         signer.getSigns().filter((item) => item.msg === 'msg').length,
       ).toEqual(1);
@@ -382,10 +383,10 @@ describe('TssSigner', () => {
         sender: 'sender',
         timestamp: currentTime,
       });
-      const mockedHandleRequest = jest
+      const mockedHandleRequest = vi
         .spyOn(signer as any, 'handleRequestMessage')
         .mockReturnValue(null);
-      await signer.callSign('signing message', jest.fn(), 'chainCode');
+      await signer.callSign('signing message', vi.fn(), 'chainCode');
       expect(mockedHandleRequest).toHaveBeenCalledTimes(1);
       expect(mockedHandleRequest).toHaveBeenCalledWith(
         {
@@ -411,7 +412,7 @@ describe('TssSigner', () => {
      * - mocked function must call with expected arguments
      */
     it('should call handleRequestMessage when message type is requestMessage', async () => {
-      const mockedFn = ((signer as any).handleRequestMessage = jest.fn());
+      const mockedFn = ((signer as any).handleRequestMessage = vi.fn());
       await signer.processMessage(requestMessage, {}, '', 1, 'peerId', 1234);
       expect(mockedFn).toHaveBeenCalledTimes(1);
       expect(mockedFn).toHaveBeenCalledWith({}, 'peerId', 1, 1234);
@@ -428,7 +429,7 @@ describe('TssSigner', () => {
      * - mocked function must call with expected arguments
      */
     it('should call handleApproveMessage when message type is approveMessage', async () => {
-      const mockedFn = ((signer as any).handleApproveMessage = jest.fn());
+      const mockedFn = ((signer as any).handleApproveMessage = vi.fn());
       await signer.processMessage(
         approveMessage,
         {},
@@ -452,7 +453,7 @@ describe('TssSigner', () => {
      * - mocked function must call with expected arguments
      */
     it('should call handleStartMessage when message type is startMessage', async () => {
-      const mockedFn = ((signer as any).handleStartMessage = jest.fn());
+      const mockedFn = ((signer as any).handleStartMessage = vi.fn());
       await signer.processMessage(startMessage, {}, '', 1, 'peerId', 1234);
       expect(mockedFn).toHaveBeenCalledTimes(1);
       expect(mockedFn).toHaveBeenCalledWith({}, 1234, 1, 'peerId');
@@ -480,7 +481,7 @@ describe('TssSigner', () => {
         publicKey: await guardSigners[4].getPk(),
       };
       const requestedGuard = [...myActiveGuards, unknownGuard];
-      jest.spyOn(detection, 'activeGuards').mockResolvedValue(myActiveGuards);
+      vi.spyOn(detection, 'activeGuards').mockResolvedValue(myActiveGuards);
       const unknownGuards = await signer.mockedGetUnknownGuards(requestedGuard);
       expect(unknownGuards).toEqual([unknownGuard]);
     });
@@ -507,7 +508,7 @@ describe('TssSigner', () => {
         publicKey: await guardSigners[3].getPk(),
       };
       const requestedGuard = [...myActiveGuards.slice(0, 2), invalidGuard];
-      jest.spyOn(detection, 'activeGuards').mockResolvedValue(myActiveGuards);
+      vi.spyOn(detection, 'activeGuards').mockResolvedValue(myActiveGuards);
       const unknownGuards = await signer.mockedGetInvalidGuards(requestedGuard);
       expect(unknownGuards).toEqual([invalidGuard]);
     });
@@ -521,12 +522,12 @@ describe('TssSigner', () => {
         { peerId: 'peerId-2', publicKey: await guardSigners[2].getPk() },
         { peerId: 'peerId-3', publicKey: await guardSigners[3].getPk() },
       ];
-      jest.spyOn(detection, 'activeGuards').mockResolvedValue(activeGuards);
+      vi.spyOn(detection, 'activeGuards').mockResolvedValue(activeGuards);
       signer.getSigns().push({
         msg: 'test message',
         signs: [],
         addedTime: currentTime,
-        callback: jest.fn(),
+        callback: vi.fn(),
         posted: false,
         chainCode: 'chainCode',
       });
@@ -636,7 +637,7 @@ describe('TssSigner', () => {
      * - after calling callBack it must call handleRequestMessage once with same argument passed to it first
      */
     it('should store request and send register to unknown guard', async () => {
-      const mockedRegister = jest
+      const mockedRegister = vi
         .spyOn(detection, 'register')
         .mockResolvedValue();
       const guards = [
@@ -662,7 +663,7 @@ describe('TssSigner', () => {
         expect.anything(),
       );
       const callback = mockedRegister.mock.calls[0][2];
-      const mocked = jest
+      const mocked = vi
         .spyOn(signer as any, 'handleRequestMessage')
         .mockResolvedValue(null);
       await callback(true);
@@ -689,7 +690,7 @@ describe('TssSigner', () => {
      * - mockedRegister must not call
      */
     it('should do nothing when unknown guard exists and sendRegister is false', async () => {
-      const mockedRegister = jest
+      const mockedRegister = vi
         .spyOn(detection, 'register')
         .mockResolvedValue();
       const payload: SignRequestPayload = {
@@ -724,7 +725,7 @@ describe('TssSigner', () => {
      * - pendingSign must contain one element with passed arguments
      */
     it('should add pendingSign when sign does not exist and do nothing', async () => {
-      const mockedRegister = jest
+      const mockedRegister = vi
         .spyOn(detection, 'register')
         .mockResolvedValue();
       const payload: SignRequestPayload = {
@@ -767,7 +768,7 @@ describe('TssSigner', () => {
      * - pendingSign must be updated with new data
      */
     it('should update pending sign request and do nothing', async () => {
-      const mockedRegister = jest
+      const mockedRegister = vi
         .spyOn(detection, 'register')
         .mockResolvedValue();
       const payload: SignRequestPayload = {
@@ -820,7 +821,7 @@ describe('TssSigner', () => {
         msg: 'msg1',
         signs: [],
         addedTime: currentTime,
-        callback: jest.fn,
+        callback: vi.fn,
         posted: false,
         chainCode: 'chainCode',
       });
@@ -844,7 +845,7 @@ describe('TssSigner', () => {
         msg: 'msg1',
         signs: [],
         addedTime: currentTime,
-        callback: jest.fn,
+        callback: vi.fn,
         posted: false,
         chainCode: 'chainCode',
       });
@@ -912,7 +913,7 @@ describe('TssSigner', () => {
         msg: 'test message',
         signs: Array(10).fill(''),
         addedTime: timestamp,
-        callback: jest.fn(),
+        callback: vi.fn(),
         request: {
           index: 0,
           guards: activeGuards,
@@ -937,8 +938,8 @@ describe('TssSigner', () => {
      * - inserted sign must contain new signature only
      */
     it('should add guard sign to sign object when all conditions are met and signs are not enough', async () => {
-      jest.spyOn(guardSigners[0], 'verify').mockResolvedValue(true);
-      jest.spyOn(signer as any, 'updateThreshold').mockResolvedValue(undefined);
+      vi.spyOn(guardSigners[0], 'verify').mockResolvedValue(true);
+      vi.spyOn(signer as any, 'updateThreshold').mockResolvedValue(undefined);
       (signer as any).threshold = { expiry: 0, value: 7 };
       await signer.mockedHandleApproveMessage(
         {
@@ -981,9 +982,9 @@ describe('TssSigner', () => {
             publicKey: await guardSigners[index].getPk(),
           })),
       );
-      jest
-        .spyOn(signer as any, 'getApprovedGuards')
-        .mockResolvedValue(activeGuards);
+      vi.spyOn(signer as any, 'getApprovedGuards').mockResolvedValue(
+        activeGuards,
+      );
       const sign = signer.getSigns()[0];
       sign.request = {
         guards: activeGuards,
@@ -993,9 +994,7 @@ describe('TssSigner', () => {
       sign.signs = sign.signs.map((item, index) =>
         index < 6 ? `random signature ${index}` : '',
       );
-      const mockedStartSign = jest
-        .spyOn(signer, 'startSign')
-        .mockResolvedValue();
+      const mockedStartSign = vi.spyOn(signer, 'startSign').mockResolvedValue();
       await signer.mockedHandleApproveMessage(
         {
           msg: 'test message',
@@ -1046,9 +1045,7 @@ describe('TssSigner', () => {
      * - mockSubmit must not call
      */
     it('should do nothing when sign is invalid', async () => {
-      const mockedStartSign = jest
-        .spyOn(signer, 'startSign')
-        .mockResolvedValue();
+      const mockedStartSign = vi.spyOn(signer, 'startSign').mockResolvedValue();
       await signer.mockedHandleApproveMessage(
         {
           msg: 'test message invalid',
@@ -1074,9 +1071,7 @@ describe('TssSigner', () => {
      * - mockSubmit must not call
      */
     it('should do nothing when sign have no request', async () => {
-      const mockedStartSign = jest
-        .spyOn(signer, 'startSign')
-        .mockResolvedValue();
+      const mockedStartSign = vi.spyOn(signer, 'startSign').mockResolvedValue();
       const sign = signer.getSigns()[0];
       sign.request = undefined;
       await signer.mockedHandleApproveMessage(
@@ -1105,10 +1100,8 @@ describe('TssSigner', () => {
      * - mockSubmit must not call
      */
     it('should do nothing in noWork time', async () => {
-      const mockedStartSign = jest
-        .spyOn(signer, 'startSign')
-        .mockResolvedValue();
-      jest.spyOn(signer as any, 'isNoWorkTime').mockReturnValue(true);
+      const mockedStartSign = vi.spyOn(signer, 'startSign').mockResolvedValue();
+      vi.spyOn(signer as any, 'isNoWorkTime').mockReturnValue(true);
       await signer.mockedHandleApproveMessage(
         {
           msg: 'test message',
@@ -1126,13 +1119,13 @@ describe('TssSigner', () => {
 
   describe('handleStartMessage', () => {
     let activeGuards: Array<ActiveGuard>;
-    let mockedStartSign: jest.SpyInstance;
+    let mockedStartSign: MockInstance;
     beforeEach(async () => {
       signer.getSigns().push({
         msg: 'signing message',
         signs: [],
         addedTime: timestamp,
-        callback: jest.fn(),
+        callback: vi.fn(),
         posted: false,
         chainCode: 'chainCode',
       });
@@ -1142,7 +1135,7 @@ describe('TssSigner', () => {
           publicKey: await item.getPk(),
         })),
       );
-      mockedStartSign = jest.spyOn(signer, 'startSign').mockResolvedValue();
+      mockedStartSign = vi.spyOn(signer, 'startSign').mockResolvedValue();
     });
 
     /**
@@ -1156,9 +1149,9 @@ describe('TssSigner', () => {
      * - mockedStartSign must call once with `signing message` and activeGuards
      */
     it('should call start sign when all conditions are met', async () => {
-      jest
-        .spyOn(signer as any, 'getApprovedGuards')
-        .mockResolvedValue(activeGuards);
+      vi.spyOn(signer as any, 'getApprovedGuards').mockResolvedValue(
+        activeGuards,
+      );
       await signer.mockedHandleStartMessage(
         {
           msg: 'signing message',
@@ -1191,10 +1184,10 @@ describe('TssSigner', () => {
      * - mockedStartSign must not call
      */
     it('should not call start sign when not required guard available', async () => {
-      jest
-        .spyOn(signer as any, 'getApprovedGuards')
-        .mockResolvedValue(activeGuards.slice(0, 6));
-      jest.spyOn(signer as any, 'updateThreshold').mockResolvedValue(undefined);
+      vi.spyOn(signer as any, 'getApprovedGuards').mockResolvedValue(
+        activeGuards.slice(0, 6),
+      );
+      vi.spyOn(signer as any, 'updateThreshold').mockResolvedValue(undefined);
       (signer as any).threshold = { expiry: 0, value: 7 };
       await signer.mockedHandleStartMessage(
         {
@@ -1293,10 +1286,10 @@ describe('TssSigner', () => {
   });
 
   describe('handleSignData', () => {
-    const callback = jest.fn();
+    const callback = vi.fn();
     beforeEach(() => {
       const signs = signer.getSigns();
-      jest.resetAllMocks();
+      vi.resetAllMocks();
       signs.push({
         msg: 'valid signing data',
         callback: callback,
@@ -1472,7 +1465,7 @@ describe('TssSigner', () => {
      * - returned list must be empty
      */
     it('should not return selected guard when signature is invalid', async () => {
-      jest.spyOn(guardSigners[0], 'verify').mockResolvedValue(false);
+      vi.spyOn(guardSigners[0], 'verify').mockResolvedValue(false);
       const res = await signer.mockedGetApprovedGuards(
         timestamp,
         {
@@ -1500,7 +1493,7 @@ describe('TssSigner', () => {
      * - returned list must contain entered guard
      */
     it('should return selected guard when signature is valid', async () => {
-      jest.spyOn(guardSigners[0], 'verify').mockResolvedValue(true);
+      vi.spyOn(guardSigners[0], 'verify').mockResolvedValue(true);
       const guards = [
         {
           publicKey: await guardSigners[0].getPk(),
@@ -1534,7 +1527,7 @@ describe('TssSigner', () => {
      * - must call axios once and cache threshold
      */
     it('should update threshold in the first time and using that instead of axios call', async () => {
-      const mockedAxios = jest
+      const mockedAxios = vi
         .spyOn((signer as any).axios, 'get')
         .mockReturnValue({ data: { threshold: 6 } });
       (signer as any).threshold = { expiry: 0 };
@@ -1557,11 +1550,11 @@ describe('TssSigner', () => {
      * - must call axios once after expiredTime
      */
     it('should update threshold after expiredTime', async () => {
-      const mockedAxios = jest
+      const mockedAxios = vi
         .spyOn((signer as any).axios, 'get')
         .mockReturnValue({ data: { threshold: 7 } });
       (signer as any).threshold = { expiry: currentTime, threshold: 7 };
-      jest.spyOn(Date, 'now').mockReturnValue(currentTime + 1);
+      vi.setSystemTime(new Date(currentTime + 1));
       await signer.mockedUpdateThreshold();
       expect(mockedAxios).toHaveBeenCalledTimes(1);
     });

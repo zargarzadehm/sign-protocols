@@ -3,5 +3,5 @@
   "compilerOptions": {
     "outDir": "./dist"
   },
-  "include": ["tests", "lib"]
+  "include": ["tests", "lib", "vitest.config.ts"]
 }
