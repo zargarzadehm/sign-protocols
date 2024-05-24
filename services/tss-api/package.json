@@ -9,7 +9,7 @@
   "scripts": {
     "lint": "go fmt $(go list ./... | grep -v /vendor/) && $(go env GOPATH)/bin/staticcheck .",
     "type-check": "go vet .",
-    "build": "CGO_ENABLED=0 go build -trimpath"
+    "build": "CGO_ENABLED=0 go build -trimpath -o bin/rosenTss"
   }
 }
 
