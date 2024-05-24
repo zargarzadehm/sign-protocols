@@ -112,7 +112,7 @@ interface ErgoMultiSigConfig {
   publicKeys: Array<string>;
   secretHex: string;
   txSignTimeout: number;
-  multiSigFirstSignDelay: number;
+  multiSigFirstSignDelay?: number;
   submit: (msg: string, peers: Array<string>) => unknown;
   getPeerId: () => Promise<string>;
 }

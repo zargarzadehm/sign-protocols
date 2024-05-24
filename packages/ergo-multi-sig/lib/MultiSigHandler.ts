@@ -10,6 +10,7 @@ import {
   SignPayload,
   TxQueued,
 } from './types';
+import { multiSigFirstSignDelay } from './const';
 import * as crypto from 'crypto';
 import { shuffle } from 'lodash-es';
 import { Semaphore } from 'await-semaphore';
@@ -45,7 +46,8 @@ export class MultiSigHandler {
     }));
     this.secret = Buffer.from(config.secretHex, 'hex');
     this.txSignTimeout = config.txSignTimeout;
-    this.multiSigFirstSignDelay = config.multiSigFirstSignDelay;
+    this.multiSigFirstSignDelay =
+      config.multiSigFirstSignDelay ?? multiSigFirstSignDelay;
     this.multiSigUtilsInstance = config.multiSigUtilsInstance;
     this.submitMessage = config.submit;
     this.getPeerId = config.getPeerId;
@@ -155,9 +157,8 @@ export class MultiSigHandler {
         for (const [key, transaction] of this.transactions.entries()) {
           if (
             transaction.createTime <
-            new Date().getTime() - this.txSignTimeout * 1000
+            new Date().getTime() - this.txSignTimeout * 1000 // milliseconds
           ) {
-            // milliseconds
             if (transaction.tx) {
               this.logger.debug(
                 `Tx [${transaction.tx

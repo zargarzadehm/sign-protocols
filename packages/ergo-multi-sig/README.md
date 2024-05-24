@@ -1,4 +1,4 @@
-# ergo-multi-sig
+# @rosen-bridge/ergo-multi-sig
 
 ## Table of contents
 
@@ -14,11 +14,11 @@ multi signature protocol for ergo network
 npm:
 
 ```sh
-npm i ergo-multi-sig
+npm i @rosen-bridge/ergo-multi-sig
 ```
 
 yarn:
 
 ```sh
-yarn add ergo-multi-sig
+yarn add @rosen-bridge/ergo-multi-sig
 ```
