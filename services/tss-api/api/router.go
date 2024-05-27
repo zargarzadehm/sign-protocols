@@ -12,6 +12,7 @@ func InitRouting(e *echo.Echo, tssController TssController) {
 	// Middleware
 	zapLogger := logger.NewLogger().Named("tss/http")
 
+	e.Validator = tssController
 	e.Use(echozap.ZapLogger(zapLogger))
 	e.Use(middleware.Recover())
 

@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/crypto/blake2b"
 	"rosen-bridge/tss-api/app/interface"
+	ecdsaSign "rosen-bridge/tss-api/app/sign/ecdsa"
 	eddsaSign "rosen-bridge/tss-api/app/sign/eddsa"
 	"rosen-bridge/tss-api/logger"
 	"rosen-bridge/tss-api/models"
@@ -23,7 +24,8 @@ type rosenTss struct {
 	ChannelMap         map[string]chan models.GossipMessage
 	KeygenOperationMap map[string]_interface.KeygenOperation
 	SignOperationMap   map[string]_interface.SignOperation
-	metaData           models.MetaData
+	eddsaMetaData      models.MetaData
+	ecdsaMetaData      models.MetaData
 	storage            storage.Storage
 	connection         network.Connection
 	Config             models.Config
@@ -41,7 +43,8 @@ func NewRosenTss(connection network.Connection, storage storage.Storage, config 
 		ChannelMap:         make(map[string]chan models.GossipMessage),
 		KeygenOperationMap: make(map[string]_interface.KeygenOperation),
 		SignOperationMap:   make(map[string]_interface.SignOperation),
-		metaData:           models.MetaData{},
+		eddsaMetaData:      models.MetaData{},
+		ecdsaMetaData:      models.MetaData{},
 		storage:            storage,
 		connection:         connection,
 		trustKey:           trustKey,
@@ -95,9 +98,9 @@ func (r *rosenTss) StartNewKeygen(keygenMessage models.KeygenMessage) error {
 
 	var operation _interface.KeygenOperation
 	switch keygenMessage.Crypto {
-	case "eddsa":
+	case models.EDDSA:
 		operation = eddsaKeygen.NewKeygenEDDSAOperation(keygenMessage)
-	case "ecdsa":
+	case models.ECDSA:
 		operation = ecdsaKeygen.NewKeygenECDSAOperation(keygenMessage)
 	default:
 		return fmt.Errorf(models.WrongCryptoProtocolError)
@@ -150,14 +153,19 @@ func (r *rosenTss) StartNewSign(signMessage models.SignMessage) error {
 	}
 
 	var operation _interface.SignOperation
-	println(signMessage.Crypto)
 	switch signMessage.Crypto {
-	case "eddsa":
+	case models.EDDSA:
 		operation = eddsaSign.NewSignEDDSAOperation(signMessage)
+	case models.ECDSA:
+		if len(signMessage.DerivationPath) == 0 {
+			return fmt.Errorf(models.WrongDerivationPathError)
+		}
+		operation = ecdsaSign.NewSignECDSAOperation(signMessage)
 	default:
 		return fmt.Errorf(models.WrongCryptoProtocolError)
 	}
-	channelId := fmt.Sprintf("%s%s", operation.GetClassName(), messageId)
+
+	channelId := fmt.Sprintf("%s%s%s", operation.GetClassName(), signMessage.ChainCode, messageId)
 	r.SignOperationMap[channelId] = operation
 
 	errorCh := make(chan error)
@@ -256,14 +264,37 @@ func (r *rosenTss) GetPeerHome() string {
 }
 
 //	setting ups metadata from given file in the home directory
-func (r *rosenTss) SetMetaData(meta models.MetaData) error {
-	r.metaData = meta
-	return nil
+func (r *rosenTss) SetMetaData(meta models.MetaData, crypto string) error {
+	switch crypto {
+	case models.EDDSA:
+		r.eddsaMetaData = meta
+		return nil
+	case models.ECDSA:
+		r.ecdsaMetaData = meta
+		return nil
+	default:
+		return fmt.Errorf(models.WrongCryptoProtocolError)
+	}
 }
 
 //	returns peer's meta data
-func (r *rosenTss) GetMetaData() models.MetaData {
-	return r.metaData
+func (r *rosenTss) GetMetaData(crypto string) (models.MetaData, error) {
+	switch crypto {
+	case models.EDDSA:
+		if (r.eddsaMetaData != models.MetaData{}) {
+			return r.eddsaMetaData, nil
+		} else {
+			return r.eddsaMetaData, fmt.Errorf(models.EDDSANoMetaDataFoundError)
+		}
+	case models.ECDSA:
+		if (r.ecdsaMetaData != models.MetaData{}) {
+			return r.ecdsaMetaData, nil
+		} else {
+			return r.ecdsaMetaData, fmt.Errorf(models.ECDSANoMetaDataFoundError)
+		}
+	default:
+		return models.MetaData{}, fmt.Errorf(models.WrongCryptoProtocolError)
+	}
 }
 
 //	returns list of operations
@@ -290,7 +321,7 @@ func (r *rosenTss) deleteInstance(operationType string, messageId string, channe
 func (r *rosenTss) deleteKeygenInstance(messageId string, channelId string, errorCh chan error) {
 	operationName := r.KeygenOperationMap[channelId].GetClassName()
 	logging.Debugf("deleting %s for channelId %s and messageId %s for keygen operation", operationName, channelId, messageId)
-	delete(r.SignOperationMap, channelId)
+	delete(r.KeygenOperationMap, channelId)
 	delete(r.ChannelMap, messageId)
 	close(errorCh)
 	logging.Infof("operation %s removed for channelId %s and messageId %s for keygen operation", operationName, channelId, messageId)

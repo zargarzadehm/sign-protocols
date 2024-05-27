@@ -1,12 +1,17 @@
-package eddsa
+package ecdsa
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"encoding/json"
 	"fmt"
 	"github.com/bnb-chain/tss-lib/v2/common"
-	eddsaKeygen "github.com/bnb-chain/tss-lib/v2/eddsa/keygen"
-	eddsaSigning "github.com/bnb-chain/tss-lib/v2/eddsa/signing"
+	"github.com/bnb-chain/tss-lib/v2/crypto"
+	"github.com/bnb-chain/tss-lib/v2/crypto/ckd"
+	ecdsaKeygen "github.com/bnb-chain/tss-lib/v2/ecdsa/keygen"
+	ecdsaSigning "github.com/bnb-chain/tss-lib/v2/ecdsa/signing"
 	"github.com/bnb-chain/tss-lib/v2/tss"
+	"github.com/btcsuite/btcd/chaincfg"
 	"go.uber.org/zap"
 	"math/big"
 	"rosen-bridge/tss-api/app/interface"
@@ -17,22 +22,22 @@ import (
 	"time"
 )
 
-type operationEDDSASign struct {
+type operationECDSASign struct {
 	sign.StructSign
 }
 
 type handler struct {
-	savedData eddsaKeygen.LocalPartySaveData
+	savedData ecdsaKeygen.LocalPartySaveData
 	pID       *tss.PartyID
 }
 
 var logging *zap.SugaredLogger
-var eddsaHandler handler
+var ecdsaHandler handler
 
-//	- Initializes the eddsa sign partyId and peers
-func (s *operationEDDSASign) Init(rosenTss _interface.RosenTss, peers []models.Peer) error {
+//	- Initializes the ecdsa sign partyId and peers
+func (s *operationECDSASign) Init(rosenTss _interface.RosenTss, peers []models.Peer) error {
 
-	s.Logger.Info("initiation eddsa signing process")
+	s.Logger.Info("initiation ecdsa signing process")
 
 	pID, err := s.LoadData(rosenTss)
 	if err != nil {
@@ -60,20 +65,20 @@ func (s *operationEDDSASign) Init(rosenTss _interface.RosenTss, peers []models.P
 //	- creates end and out channel for party,
 //	- calls StartParty function of protocol
 //	- handles end channel and out channel in a go routine
-func (s *operationEDDSASign) CreateParty(rosenTss _interface.RosenTss, statusCh chan bool, errorCh chan error) {
+func (s *operationECDSASign) CreateParty(rosenTss _interface.RosenTss, statusCh chan bool, errorCh chan error) {
 	s.Logger.Info("creating and starting party")
 
 	outCh := make(chan tss.Message, len(s.LocalTssData.PartyIds))
 	endCh := make(chan *common.SignatureData, len(s.LocalTssData.PartyIds))
 
-	eddsaMetaData, err := rosenTss.GetMetaData(models.EDDSA)
+	ecdsaMetaData, err := rosenTss.GetMetaData(models.ECDSA)
 	if err != nil {
 		s.Logger.Errorf("there was an error in getting metadata: %+v", err)
 		errorCh <- err
 		return
 	}
 
-	err = s.StartParty(&s.LocalTssData, eddsaMetaData.Threshold, s.SignMessage, outCh, endCh)
+	err = s.StartParty(&s.LocalTssData, ecdsaMetaData.Threshold, s.SignMessage, outCh, endCh)
 	if err != nil {
 		s.Logger.Errorf("there was an error in starting party: %+v", err)
 		errorCh <- err
@@ -102,7 +107,7 @@ func (s *operationEDDSASign) CreateParty(rosenTss _interface.RosenTss, statusCh 
 }
 
 //	- reads new gossip messages from channel and handle it by calling related function in a go routine.
-func (s *operationEDDSASign) StartAction(rosenTss _interface.RosenTss, messageCh chan models.GossipMessage, errorCh chan error) error {
+func (s *operationECDSASign) StartAction(rosenTss _interface.RosenTss, messageCh chan models.GossipMessage, errorCh chan error) error {
 
 	partyStarted := false
 	statusCh := make(chan bool)
@@ -163,21 +168,21 @@ func (s *operationEDDSASign) StartAction(rosenTss _interface.RosenTss, messageCh
 	}
 }
 
-//	- create eddsa sign operation
-func NewSignEDDSAOperation(signMessage models.SignMessage) _interface.SignOperation {
-	logging = logger.NewSugar("eddsa-sign")
-	return &operationEDDSASign{
+//	- create ecdsa sign operation
+func NewSignECDSAOperation(signMessage models.SignMessage) _interface.SignOperation {
+	logging = logger.NewSugar("ecdsa-sign")
+	return &operationECDSASign{
 		StructSign: sign.StructSign{
 			SignMessage: signMessage,
 			Logger:      logging,
-			Handler:     &eddsaHandler,
+			Handler:     &ecdsaHandler,
 		},
 	}
 }
 
 //	- returns the class name
-func (s *operationEDDSASign) GetClassName() string {
-	return "eddsaSign"
+func (s *operationECDSASign) GetClassName() string {
+	return "ecdsaSign"
 }
 
 //	- creates tss parameters and party
@@ -197,11 +202,36 @@ func (h *handler) StartParty(
 				localPartyId = peer
 			}
 		}
+
+		il, extendedChildPk, err := derivingPubkeyFromPath(h.savedData.ECDSAPub, []byte(signMsg.ChainCode), signMsg.DerivationPath, tss.S256())
+
+		if err != nil {
+			return err
+		}
+
+		keyDerivationDelta := il
+
+		// deep copy h.savedData to keys
+		origJSON, err1 := json.Marshal(h.savedData)
+		if err1 != nil {
+			return err1
+		}
+		clone := ecdsaKeygen.LocalPartySaveData{}
+		if err1 = json.Unmarshal(origJSON, &clone); err1 != nil {
+			return err1
+		}
+		keys := []ecdsaKeygen.LocalPartySaveData{clone}
+
+		err = ecdsaSigning.UpdatePublicKeyAndAdjustBigXj(keyDerivationDelta, keys, &extendedChildPk.PublicKey, tss.S256())
+		if err != nil {
+			return err
+		}
+
 		msgBytes, _ := utils.HexDecoder(signMsg.Message)
 		signDataBigInt := new(big.Int).SetBytes(msgBytes)
-		localTssData.Params = tss.NewParameters(tss.Edwards(), ctx, localPartyId, len(localTssData.PartyIds), threshold)
-		localTssData.Party = eddsaSigning.NewLocalParty(signDataBigInt, localTssData.Params, h.savedData, outCh, endCh, len(msgBytes))
+		localTssData.Params = tss.NewParameters(tss.S256(), ctx, localPartyId, len(localTssData.PartyIds), threshold)
 
+		localTssData.Party = ecdsaSigning.NewLocalPartyWithKDD(signDataBigInt, localTssData.Params, keys[0], keyDerivationDelta, outCh, endCh, len(msgBytes))
 		if err := localTssData.Party.Start(); err != nil {
 			return err
 		}
@@ -213,9 +243,9 @@ func (h *handler) StartParty(
 //	- loads keygen data from file for signing
 //	- creates tss party ID with p2pID
 func (h *handler) LoadData(rosenTss _interface.RosenTss) (*tss.PartyID, error) {
-	_, err1 := rosenTss.GetMetaData(models.EDDSA)
-	if h.savedData.ShareID == nil || (err1 != nil && err1.Error() == models.EDDSANoMetaDataFoundError) {
-		data, pID, err := rosenTss.GetStorage().LoadEDDSAKeygen(rosenTss.GetPeerHome(), rosenTss.GetP2pId())
+	_, err1 := rosenTss.GetMetaData(models.ECDSA)
+	if h.savedData.ShareID == nil || (err1 != nil && err1.Error() == models.ECDSANoMetaDataFoundError) {
+		data, pID, err := rosenTss.GetStorage().LoadECDSAKeygen(rosenTss.GetPeerHome(), rosenTss.GetP2pId())
 		if err != nil {
 			logging.Error(err)
 			return nil, err
@@ -226,7 +256,7 @@ func (h *handler) LoadData(rosenTss _interface.RosenTss) (*tss.PartyID, error) {
 		}
 		h.savedData = data.KeygenData
 		h.pID = pID
-		err = rosenTss.SetMetaData(data.MetaData, models.EDDSA)
+		err = rosenTss.SetMetaData(data.MetaData, models.ECDSA)
 		if err != nil {
 			return nil, err
 		}
@@ -237,4 +267,27 @@ func (h *handler) LoadData(rosenTss _interface.RosenTss) (*tss.PartyID, error) {
 //	- returns key_list and shared_ID of peer stored in the struct
 func (h *handler) GetData() ([]*big.Int, *big.Int) {
 	return h.savedData.Ks, h.savedData.ShareID
+}
+
+// - derive on master pubKey according to bip32 (tss-lib modified version)
+// - return new keyDerivationDelta and extendedChildPk
+func derivingPubkeyFromPath(masterPub *crypto.ECPoint, chainCode []byte, path []uint32, ec elliptic.Curve) (*big.Int, *ckd.ExtendedKey, error) {
+	// build ecdsa key pair
+	pk := ecdsa.PublicKey{
+		Curve: ec,
+		X:     masterPub.X(),
+		Y:     masterPub.Y(),
+	}
+
+	net := &chaincfg.MainNetParams
+	extendedParentPk := &ckd.ExtendedKey{
+		PublicKey:  pk,
+		Depth:      0,
+		ChildIndex: 0,
+		ChainCode:  chainCode[:],
+		ParentFP:   []byte{0x00, 0x00, 0x00, 0x00},
+		Version:    net.HDPublicKeyID[:],
+	}
+
+	return ckd.DeriveChildKeyFromHierarchy(path, extendedParentPk, ec.Params().N, ec)
 }
