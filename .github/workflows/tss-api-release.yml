@@ -41,6 +41,7 @@ jobs:
 
       - name: Run build and prepare target files
         run: |
+          echo ${{ github.ref_name }}
           CGO_ENABLED=0 go build -trimpath -o bin/rosenTss-${{ matrix.platform }}-${{ github.ref_name }}${{ matrix.extension }}
           mkdir conf
           mv conf.env.sample conf/conf.env
