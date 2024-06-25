@@ -1,8 +1,9 @@
-name: Release
+name: Release TSS API
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - tss-api-*
 
 jobs:
   build:
@@ -19,6 +20,7 @@ jobs:
             platform: linux
           - os: windows-latest
             platform: windows
+            extension: '.exe'
     defaults:
       run:
         shell: bash
@@ -39,7 +41,7 @@ jobs:
 
       - name: Run build and prepare target files
         run: |
-          CGO_ENABLED=0 go build -trimpath -o bin/rosenTss-${{ matrix.platform }}-${{ github.ref_name }}
+          CGO_ENABLED=0 go build -trimpath -o bin/rosenTss-${{ matrix.platform }}-${{ github.ref_name }}${{ matrix.extension }}
           mkdir conf
           mv conf.env.sample conf/conf.env
 
