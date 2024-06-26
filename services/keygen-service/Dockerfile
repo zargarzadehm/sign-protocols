@@ -13,6 +13,7 @@ WORKDIR /app
 COPY --chmod=700 --chown=ergo:ergo package-lock.json ./
 COPY --chmod=700 --chown=ergo:ergo ./services/keygen-service/package.json ./
 ADD --chmod=700 --chown=ergo:ergo ./services/keygen-service/patches/ ./patches/
+RUN npm prune --production
 RUN npm ci
 COPY --chmod=700 --chown=ergo:ergo ./services/keygen-service .
 RUN ls -la .
