@@ -50,7 +50,7 @@ jobs:
 
       - name: Prepare Release File
         run: |
-          7z a rosenTss-${{ matrix.platform }}-${{ github.ref_name }}.zip ./bin/rosenTss-${{ matrix.platform }}-${{ steps.build-version.outputs.appVersion }}${{ matrix.extension }} ./conf
+          7z a rosenTss-${{ matrix.platform }}-${{ steps.build-version.outputs.appVersion }}.zip ./bin/rosenTss-${{ matrix.platform }}-${{ steps.build-version.outputs.appVersion }}${{ matrix.extension }} ./conf
 
       - name: Upload Release File
         uses: softprops/action-gh-release@v1
