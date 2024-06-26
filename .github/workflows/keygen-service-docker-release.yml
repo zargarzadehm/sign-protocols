@@ -30,7 +30,7 @@ jobs:
           version: 'latest'
           regex: true
           file: 'rosenTss-linux-*'
-          target: './bin/'
+          target: './services/keygen-servic/bin/'
 
       - name: Move the Files
         run: |
@@ -45,7 +45,11 @@ jobs:
           echo "*********************************************"
           mv ./docker/production.yaml ./config/
           mv ./docker/custom-environment-variables.yaml ./config/
+          echo "*********************************************"
+          ls -la bin/
           7z x ./bin/rosenTss-linux-* -obin/ && rm -rf ./bin/*.zip
+          echo "*********************************************"
+          ls -la bin/
           mv ./bin/rosenTss-* ./bin/rosenTss
 
       - name: Set up QEMU
