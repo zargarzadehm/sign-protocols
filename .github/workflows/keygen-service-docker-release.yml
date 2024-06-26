@@ -7,7 +7,6 @@ on:
     tags:
       - keygen-service-*
 
-
 jobs:
   build:
     name: Build and Push Docker Image
@@ -67,6 +66,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
+          file: ./services/keygen-service
           platforms: ${{ vars.PLATFORM_LIST || 'linux/amd64' }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
