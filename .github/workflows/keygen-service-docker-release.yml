@@ -34,22 +34,9 @@ jobs:
 
       - name: Move the Files
         run: |
-          echo "*********************************************"
-          pwd
-          echo "*********************************************"
-          ls -la .
-          echo "*********************************************"
-          ls -la ../
-          echo "*********************************************"
-          ls -la ../../
-          echo "*********************************************"
           mv ./docker/production.yaml ./config/
           mv ./docker/custom-environment-variables.yaml ./config/
-          echo "*********************************************"
-          ls -la bin/
           7z x ./bin/rosenTss-linux-* -obin/ && rm -rf ./bin/*.zip
-          echo "*********************************************"
-          ls -la bin/
           mv ./bin/rosenTss-* ./bin/rosenTss
 
       - name: Set up QEMU
@@ -79,7 +66,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
-          context: ./services/keygen-service/
+          context: .
           platforms: ${{ vars.PLATFORM_LIST || 'linux/amd64' }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
