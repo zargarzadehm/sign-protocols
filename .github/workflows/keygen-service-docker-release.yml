@@ -30,7 +30,7 @@ jobs:
           version: 'latest'
           regex: true
           file: 'rosenTss-linux-*'
-          target: './services/keygen-servic/bin/'
+          target: './services/keygen-service/bin/'
 
       - name: Move the Files
         run: |
