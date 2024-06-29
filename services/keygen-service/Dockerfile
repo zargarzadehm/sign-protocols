@@ -16,7 +16,7 @@ ADD --chmod=700 --chown=ergo:ergo ./services/keygen-service/patches/ ./patches/
 RUN npm prune --production
 RUN npm ci
 COPY --chmod=700 --chown=ergo:ergo ./services/keygen-service .
-RUN ls -la .
+RUN ls -la ./bin/
 RUN npm run build
 
 ENV NODE_ENV=production
